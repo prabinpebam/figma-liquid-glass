@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Liquid Glass</title>
+  <link rel="stylesheet" href="style.css"><!-- copied to dist/style.css -->
+</head>
+<body>
+  <h1>Liquid Glass</h1>
+
+  <input class="input" placeholder="Type something…" />
+  <button class="button" id="close-btn">Close plugin</button>
+
+  <script>
+    document.getElementById('close-btn').onclick = () =>
+      parent.postMessage({ pluginMessage: { type: 'close' } }, '*');
+  </script>
+</body>
+</html>

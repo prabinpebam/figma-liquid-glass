@@ -1,0 +1,13 @@
+// Show the UI specified in manifest.json.
+// The dimensions can be adjusted as needed.
+figma.showUI("", { width: 320, height: 400 });
+
+// Listen for messages from the UI.
+figma.ui.onmessage = (msg) => {
+  // A common message is to close the plugin.
+  if (msg.type === 'close') {
+    figma.closePlugin();
+  }
+
+  // You can handle other messages from the UI here.
+};
