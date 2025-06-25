@@ -5,10 +5,10 @@
   "description": "A Figma plugin that creates a liquid glass effect.",
   "main": "src/code.ts",
   "scripts": {
-    "build": "tsc && cpx src/ui/**/* dist",
+    "build": "tsc && cpx \"src/ui/**/*\" dist/ui",
     "watch": "npm-run-all --parallel watch:*",
     "watch:ts": "tsc -w",
-    "watch:ui": "onchange \"src/ui/**/*\" -- cpx \"{{changed}}\" dist",
+    "watch:ui": "onchange \"src/ui/**/*\" -- cpx \"{{changed}}\" dist/ui --parent",
     "type-check": "tsc --noEmit"
   },
   "keywords": [

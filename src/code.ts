@@ -1,6 +1,5 @@
-// Show the UI specified in manifest.json.
-// The dimensions can be adjusted as needed.
-figma.showUI("", { width: 320, height: 400 });
+// Show the UI using the HTML content from manifest.json
+figma.showUI(__html__, { width: 320, height: 400 });
 
 // Listen for messages from the UI.
 figma.ui.onmessage = (msg) => {
