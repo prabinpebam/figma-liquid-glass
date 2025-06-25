@@ -1,0 +1,9 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "outDir": "./dist/ui",
+    "rootDir": "./src/ui",
+    "module": "es2020"
+  },
+  "include": ["src/ui/**/*.ts"]
+}

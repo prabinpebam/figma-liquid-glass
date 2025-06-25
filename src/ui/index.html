@@ -36,17 +36,62 @@
       border-radius: 4px;
       width: 100%;
     }
+
+    #output-area {
+      margin-top: 12px;
+      padding: 10px;
+      border: 2px dashed #007bff;
+      background: #fff;
+      text-align: center;
+    }
+
+    #output-img {
+      max-width: 100%;
+      display: none;
+    }
   </style>
 </head>
 <body>
   <h1>Liquid Glass</h1>
 
   <input class="input" placeholder="Type something…" />
+
+  <button class="button" id="capture-btn">Capture image</button>
   <button class="button" id="close-btn">Close plugin</button>
 
+  <div id="output-area">
+    <em id="placeholder">Captured image will appear here…</em>
+    <img id="output-img" />
+  </div>
+
   <script>
+    // close plugin
     document.getElementById('close-btn').onclick = () =>
       parent.postMessage({ pluginMessage: { type: 'close' } }, '*');
+
+    // capture button
+    document.getElementById('capture-btn').onclick = () => {
+      console.log('[UI] Capture button clicked');
+      parent.postMessage({ pluginMessage: { type: 'capture-image' } }, '*');
+    };
+
+    // receive image from plugin
+    window.onmessage = (event) => {
+      const msg = event.data.pluginMessage;
+      if (!msg || msg.type !== 'image-captured') return;
+
+      console.log('[UI] Received image / error:', msg);
+      if (msg.error) {
+        alert(msg.error);
+        return;
+      }
+
+      const img = document.getElementById('output-img');
+      const ph  = document.getElementById('placeholder');
+      img.src = msg.data;
+      img.style.display = 'block';
+      ph?.remove(); // remove placeholder text
+    };
   </script>
 </body>
 </html>

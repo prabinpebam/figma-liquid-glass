@@ -38,4 +38,3 @@ if (typeof self.importScripts === 'undefined') self.importScripts = function () 
     })
   ]
 };
-};
