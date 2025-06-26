@@ -1,7 +1,7 @@
 {
   "extends": "./tsconfig.json",
   "compilerOptions": {
-    "outDir": "./dist",          /* matches manifest main */
+    "outDir": "./dist",
     "rootDir": "./src",
     "module": "commonjs"
   },
