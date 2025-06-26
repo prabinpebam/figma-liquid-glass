@@ -2,6 +2,16 @@
 figma.showUI(__html__, { width: 320, height: 400 });
 
 const OFFSET = 20; // px extra margin around the selection
+const DEBOUNCE_MS = 200;
+
+/* ────────────── transient state ────────────── */
+const editState = {
+  node:     null as SceneNode | null,
+  original: null as readonly Paint[] | null,
+  timerId:  0 as number | null,
+  inEdit:   false,
+  lastBounds: null as { x:number; y:number; width:number; height:number } | null
+};
 
 // util ──────────────────────────────────────────────────────
 function rectsIntersect(a:{x:number;y:number;width:number;height:number},
@@ -16,6 +26,131 @@ function nodeBounds(node: SceneNode) {
   const t = node.absoluteTransform;
   return { x: t[0][2], y: t[1][2], width: (node as any).width, height: (node as any).height };
 }
+
+function boundsEqual(a: typeof editState.lastBounds, b: typeof editState.lastBounds) {
+  return a && b && a.x === b.x && a.y === b.y && a.width === b.width && a.height === b.height;
+}
+
+/* helpers */
+function applyTempEditFill(n: SceneNode) {
+  if (!('fills' in n)) return;
+
+  // figma.mixed is a unique symbol, so ensure we have an array first
+  const fills: readonly Paint[] = Array.isArray(n.fills) ? (n.fills as readonly Paint[]) : [];
+  editState.original = fills.map((p): Paint => ({ ...(p as Paint) })); // deep-copy
+
+  n.fills = [{ type: 'SOLID', color: { r: 1, g: 1, b: 1 }, opacity: 0.5 }];
+}
+
+function restoreFill(n: SceneNode) {
+  if (!('fills' in n) || !editState.original) return;
+  n.fills = editState.original;
+  editState.original = null;
+}
+
+async function captureAndSend(target: SceneNode) {
+    /* 1 — capture rectangle around the target with padding */
+    const { width, height } = target as any;
+    const absX = target.absoluteTransform[0][2];
+    const absY = target.absoluteTransform[1][2];
+    const captureRect = {
+      x: absX - OFFSET,
+      y: absY - OFFSET,
+      width:  width + OFFSET * 2,
+      height: height + OFFSET * 2
+    };
+
+    /* 2 — collect nodes to hide: the target itself and every
+           other visible node overlapping the rect that is ABOVE
+           the target in layer order.                                       */
+    const nodesToRestore: { node: SceneNode; opacity: number }[] = [];
+
+    function hide(node: SceneNode) {
+      nodesToRestore.push({ node, opacity: (node as any).opacity ?? 1 });
+      (node as any).opacity = 0;
+    }
+
+    const parent = target.parent;
+    const siblings = parent ? parent.children : [];
+
+    let foundTarget = false;
+    for (const n of siblings) {
+      if (n === target) {
+        foundTarget = true;
+        hide(n);            // hide target
+        continue;
+      }
+      if (!foundTarget) continue; // below the target → keep
+      if ((n as any).visible === false) continue;
+
+      const b = nodeBounds(n);
+      if (rectsIntersect(b, captureRect)) hide(n);
+    }
+
+    /* 3 — create slice, export */
+    const slice = figma.createSlice();
+    slice.x = captureRect.x;
+    slice.y = captureRect.y;
+    slice.resizeWithoutConstraints(captureRect.width, captureRect.height);
+
+    const bytes  = await slice.exportAsync({ format: 'PNG' });
+    const base64 = figma.base64Encode(bytes);
+
+    /* 4 — restore everything */
+    slice.remove();
+    for (const { node, opacity } of nodesToRestore) (node as any).opacity = opacity;
+
+    /* 5 — send to UI */
+    figma.ui.postMessage({ type: 'image-captured', data: `data:image/png;base64,${base64}` });
+    editState.lastBounds = nodeBounds(target);
+}
+
+/* ─────────── event handlers ─────────── */
+function onSelectionChange() {
+  // restore previous node if left in edit mode
+  if (editState.inEdit && editState.node) restoreFill(editState.node);
+  if (editState.timerId) clearTimeout(editState.timerId);
+
+  const sel = figma.currentPage.selection;
+  editState.node   = sel.length === 1 ? sel[0] : null;
+  editState.inEdit = false;
+  editState.original = null;
+  editState.lastBounds = editState.node ? nodeBounds(editState.node) : null;
+  if (editState.node) captureAndSend(editState.node); // first preview
+}
+
+function onDocumentChange(ev: DocumentChangeEvent) {
+  if (!editState.node) return;
+
+  const current = nodeBounds(editState.node);
+  if (boundsEqual(current, editState.lastBounds)) return; // position & size unchanged
+
+  editState.lastBounds = current; // store new bounds
+
+  // first change → enter edit mode
+  if (!editState.inEdit) {
+    applyTempEditFill(editState.node);
+    editState.inEdit = true;
+  }
+
+  // debounce final capture
+  if (editState.timerId) clearTimeout(editState.timerId);
+  editState.timerId = setTimeout(() => {
+    if (!editState.node) return;
+    restoreFill(editState.node);
+    editState.inEdit = false;
+    captureAndSend(editState.node);
+  }, DEBOUNCE_MS);
+}
+
+/* register global listeners */
+figma.on('selectionchange', onSelectionChange);
+
+// Ensure pages are loaded before we use `documentchange`
+(async () => {
+  await figma.loadAllPagesAsync();
+  figma.on('documentchange', onDocumentChange);
+})();
 
 // Listen for messages from the UI.
 figma.ui.onmessage = async (msg) => {
