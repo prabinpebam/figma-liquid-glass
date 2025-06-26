@@ -105,5 +105,26 @@ figma.ui.onmessage = async (msg) => {
     figma.ui.postMessage({ type: 'image-captured', data: `data:image/png;base64,${base64}` });
   }
 
+  /* ───────────────── apply inverted image as background ───────────── */
+  if (msg.type === 'apply-image-fill') {
+    const selection = figma.currentPage.selection;
+    if (selection.length !== 1) return;
+    const node = selection[0];
+    if (!('fills' in node)) return;
+
+    const base64 = msg.data.split(',')[1];
+    const bytes  = figma.base64Decode(base64);
+    const image  = figma.createImage(bytes);
+
+    const imagePaint: ImagePaint = {
+      type: 'IMAGE',
+      imageHash: image.hash,
+      scaleMode: 'FILL',     // no transform needed – image already trimmed
+      visible: true
+    };
+
+    node.fills = [imagePaint];
+    figma.notify('Background applied');
+  }
   // You can handle other messages from the UI here.
 };

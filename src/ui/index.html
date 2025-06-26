@@ -65,33 +65,57 @@
   </div>
 
   <script>
-    // close plugin
+    const OFFSET = 20;                         // must match code.ts
+    const sendLog = (m) =>
+      parent.postMessage({ pluginMessage: { type: 'ui-log', payload: m } }, '*');
+
+    /* buttons */
+    document.getElementById('capture-btn').onclick = () => {
+      sendLog('[UI] Capture button clicked');
+      parent.postMessage({ pluginMessage: { type: 'capture-image' } }, '*');
+    };
     document.getElementById('close-btn').onclick = () =>
       parent.postMessage({ pluginMessage: { type: 'close' } }, '*');
 
-    // capture button
-    document.getElementById('capture-btn').onclick = () => {
-      console.log('[UI] Capture button clicked');
-      parent.postMessage({ pluginMessage: { type: 'capture-image' } }, '*');
-    };
-
-    // receive image from plugin
-    window.onmessage = (event) => {
-      const msg = event.data.pluginMessage;
+    /* receive slice → crop, invert, preview, send back */
+    window.onmessage = (e) => {
+      const msg = e.data.pluginMessage;
       if (!msg || msg.type !== 'image-captured') return;
+      if (msg.error) { alert(msg.error); return; }
 
-      console.log('[UI] Received image / error:', msg);
-      if (msg.error) {
-        alert(msg.error);
-        return;
-      }
+      cropAndInvert(msg.data).then((neg) => {
+        const img = document.getElementById('output-img');
+        img.src   = neg;
+        img.style.display = 'block';
+        document.getElementById('placeholder')?.remove();
 
-      const img = document.getElementById('output-img');
-      const ph  = document.getElementById('placeholder');
-      img.src = msg.data;
-      img.style.display = 'block';
-      ph?.remove(); // remove placeholder text
+        parent.postMessage({ pluginMessage: { type: 'apply-image-fill', data: neg } }, '*');
+      });
     };
+
+    /* helper: crop OFFSET on each side and invert colours */
+    function cropAndInvert(dataURL) {
+      return new Promise((res) => {
+        const i = new Image();
+        i.onload = () => {
+          const w = i.width  - OFFSET * 2;
+          const h = i.height - OFFSET * 2;
+          const c = document.createElement('canvas'); c.width = w; c.height = h;
+          const ctx = c.getContext('2d');
+          ctx.drawImage(i, OFFSET, OFFSET, w, h, 0, 0, w, h);   // crop
+          const id = ctx.getImageData(0, 0, w, h);
+          const d  = id.data;
+          for (let p = 0; p < d.length; p += 4) {
+            d[p]   = 255 - d[p];       // R
+            d[p+1] = 255 - d[p+1];     // G
+            d[p+2] = 255 - d[p+2];     // B
+          }
+          ctx.putImageData(id, 0, 0);
+          res(c.toDataURL('image/png'));
+        };
+        i.src = dataURL;
+      });
+    }
   </script>
-</body>
-</html>
+ </body>
+ </html>
