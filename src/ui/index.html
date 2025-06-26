@@ -54,66 +54,62 @@
 <body>
   <h1>Liquid Glass</h1>
 
-  <input class="input" placeholder="Type something…" />
+  <!-- effect selector -->
+  <fieldset>
+    <legend>Effect</legend>
+    <label><input type="radio" name="fx" value="none"   id="fx-none"   /> None</label><br>
+    <label><input type="radio" name="fx" value="liquid" id="fx-liquid"/> Liquid glass</label><br>
+    <label><input type="radio" name="fx" value="invert" id="fx-invert" checked/> Invert</label>
+  </fieldset>
 
   <button class="button" id="capture-btn">Capture image</button>
-  <button class="button" id="close-btn">Close plugin</button>
 
   <div id="output-area">
     <em id="placeholder">Captured image will appear here…</em>
     <img id="output-img" />
   </div>
 
+  <!-- inline script -->
   <script>
-    const OFFSET = 20;                         // must match code.ts
-    const sendLog = (m) =>
-      parent.postMessage({ pluginMessage: { type: 'ui-log', payload: m } }, '*');
+    const OFFSET = 20;
+    const send   = (t,p)=>parent.postMessage({pluginMessage:{type:t,...p}},'*');
+    const log    = m=>send('ui-log',{payload:m});
 
-    /* buttons */
-    document.getElementById('capture-btn').onclick = () => {
-      sendLog('[UI] Capture button clicked');
-      parent.postMessage({ pluginMessage: { type: 'capture-image' } }, '*');
-    };
-    document.getElementById('close-btn').onclick = () =>
-      parent.postMessage({ pluginMessage: { type: 'close' } }, '*');
+    /* radio change → notify plugin */
+    document.querySelectorAll('input[name="fx"]').forEach(i=>{
+      i.addEventListener('change',e=>{
+        if(i.checked) send('effect-change',{effect:i.value});
+      });
+    });
 
-    /* receive slice → crop, invert, preview, send back */
-    window.onmessage = (e) => {
-      const msg = e.data.pluginMessage;
-      if (!msg || msg.type !== 'image-captured') return;
-      if (msg.error) { alert(msg.error); return; }
+    /* capture btn */
+    document.getElementById('capture-btn').onclick=()=>send('capture-image');
 
-      cropAndInvert(msg.data).then((neg) => {
-        const img = document.getElementById('output-img');
-        img.src   = neg;
-        img.style.display = 'block';
+    /* receive slice */
+    window.onmessage=e=>{
+      const msg=e.data.pluginMessage;
+      if(!msg||msg.type!=='image-captured'||msg.error)return;
+      const effect=document.querySelector('input[name="fx"]:checked')?.value;
+      if(effect!=='invert')return; // only process for invert now
+      cropAndInvert(msg.data).then(url=>{
+        const img=document.getElementById('output-img');
+        img.src=url; img.style.display='block';
         document.getElementById('placeholder')?.remove();
-
-        parent.postMessage({ pluginMessage: { type: 'apply-image-fill', data: neg } }, '*');
+        send('apply-image-fill',{data:url});
       });
     };
 
-    /* helper: crop OFFSET on each side and invert colours */
-    function cropAndInvert(dataURL) {
-      return new Promise((res) => {
-        const i = new Image();
-        i.onload = () => {
-          const w = i.width  - OFFSET * 2;
-          const h = i.height - OFFSET * 2;
-          const c = document.createElement('canvas'); c.width = w; c.height = h;
-          const ctx = c.getContext('2d');
-          ctx.drawImage(i, OFFSET, OFFSET, w, h, 0, 0, w, h);   // crop
-          const id = ctx.getImageData(0, 0, w, h);
-          const d  = id.data;
-          for (let p = 0; p < d.length; p += 4) {
-            d[p]   = 255 - d[p];       // R
-            d[p+1] = 255 - d[p+1];     // G
-            d[p+2] = 255 - d[p+2];     // B
-          }
-          ctx.putImageData(id, 0, 0);
-          res(c.toDataURL('image/png'));
-        };
-        i.src = dataURL;
+    function cropAndInvert(dataURL){
+      return new Promise(res=>{
+        const i=new Image();i.onload=()=>{
+          const w=i.width-OFFSET*2,h=i.height-OFFSET*2,
+                c=document.createElement('canvas');c.width=w;c.height=h,
+                x=c.getContext('2d');
+          x.drawImage(i,OFFSET,OFFSET,w,h,0,0,w,h);
+          const id=x.getImageData(0,0,w,h),d=id.data;
+          for(let p=0;p<d.length;p+=4){d[p]=255-d[p];d[p+1]=255-d[p+1];d[p+2]=255-d[p+2];}
+          x.putImageData(id,0,0);res(c.toDataURL('image/png'));
+        };i.src=dataURL;
       });
     }
   </script>

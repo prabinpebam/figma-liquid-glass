@@ -48,7 +48,11 @@ function restoreFill(n: SceneNode) {
   editState.original = null;
 }
 
+let currentEffect: 'none' | 'invert' | 'liquid' = 'invert';
+
 async function captureAndSend(target: SceneNode) {
+  if (currentEffect !== 'invert') return; // liquid glass TBD
+
     /* 1 — capture rectangle around the target with padding */
     const { width, height } = target as any;
     const absX = target.absoluteTransform[0][2];
@@ -121,6 +125,7 @@ function onSelectionChange() {
 
 function onDocumentChange(ev: DocumentChangeEvent) {
   if (!editState.node) return;
+  if (currentEffect === 'none') return; // ignore when disabled
 
   const current = nodeBounds(editState.node);
   if (boundsEqual(current, editState.lastBounds)) return; // position & size unchanged
@@ -260,6 +265,13 @@ figma.ui.onmessage = async (msg) => {
 
     node.fills = [imagePaint];
     figma.notify('Background applied');
+  }
+
+  /* effect selector */
+  if (msg.type === 'effect-change') {
+    currentEffect = msg.effect;           // update global
+    figma.notify(`Effect: ${currentEffect}`);
+    return;
   }
   // You can handle other messages from the UI here.
 };

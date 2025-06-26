@@ -48,22 +48,22 @@ function init() {
   };
 }
 
-const OFFSET = 20; // must match code.ts
+const UI_OFFSET = 20; // must match code.ts
 
 // Replace invertImage with a combined crop-and-invert
 async function cropAndInvert(dataURL: string): Promise<string> {
   return new Promise((res) => {
     const img = new Image();
     img.onload = () => {
-      const w = img.width  - OFFSET * 2;
-      const h = img.height - OFFSET * 2;
+      const w = img.width  - UI_OFFSET * 2;
+      const h = img.height - UI_OFFSET * 2;
       const c = document.createElement('canvas');
       c.width = w;
       c.height = h;
       const ctx = c.getContext('2d')!;
 
       // draw the inner region (crop)
-      ctx.drawImage(img, OFFSET, OFFSET, w, h, 0, 0, w, h);
+      ctx.drawImage(img, UI_OFFSET, UI_OFFSET, w, h, 0, 0, w, h);
 
       // invert
       const id = ctx.getImageData(0, 0, w, h);
