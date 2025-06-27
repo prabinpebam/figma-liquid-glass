@@ -284,6 +284,50 @@ figma.ui.onmessage = async (msg) => {
     };
 
     node.fills = [imagePaint];
+
+    // Apply specific styles only for the 'liquid' effect
+    if (currentEffect === 'liquid' && 'strokes' in node && 'effects' in node) {
+      node.strokeWeight = 2;
+      node.strokes = [{
+        type: 'GRADIENT_ANGULAR',
+        gradientTransform: [[1, 0, 0], [0, 1, 0]],
+        gradientStops: [
+          { position: 0.12, color: { r: 1, g: 1, b: 1, a: 1.0 } },
+          { position: 0.28, color: { r: 1, g: 1, b: 1, a: 0.1 } },
+          { position: 0.36, color: { r: 1, g: 1, b: 1, a: 0.1 } },
+          { position: 0.64, color: { r: 1, g: 1, b: 1, a: 1.0 } },
+          { position: 0.78, color: { r: 1, g: 1, b: 1, a: 0.1 } },
+          { position: 0.89, color: { r: 1, g: 1, b: 1, a: 0.1 } },
+        ],
+        visible: true
+      }];
+
+      node.effects = [
+        { // Inner Shadow
+          type: 'INNER_SHADOW',
+          color: { r: 0, g: 0, b: 0, a: 0.4 },
+          offset: { x: 12, y: 12 },
+          radius: 30,
+          spread: 0,
+          visible: true,
+          blendMode: 'NORMAL'
+        },
+        { // Drop Shadow
+          type: 'DROP_SHADOW',
+          color: { r: 0, g: 0, b: 0, a: 0.25 },
+          offset: { x: 0, y: 6 },
+          radius: 5,
+          spread: 0,
+          visible: true,
+          blendMode: 'NORMAL'
+        }
+      ];
+    } else if ('strokes' in node && 'effects' in node) {
+      // For other effects (like 'invert'), clear these styles
+      node.strokes = [];
+      node.effects = [];
+    }
+
     figma.notify('Background applied');
   }
 
