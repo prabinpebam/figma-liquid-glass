@@ -1,5 +1,5 @@
 // Show the UI using the HTML content from manifest.json
-figma.showUI(__html__, { width: 320, height: 400 });
+figma.showUI(__html__, { width: 320, height: 500 });
 
 const OFFSET = 20; // px extra margin around the selection
 

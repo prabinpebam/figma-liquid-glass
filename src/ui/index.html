@@ -4,50 +4,157 @@
   <meta charset="UTF-8">
   <title>Liquid Glass</title>
   <style>
+    /* A modern, clean, dark theme */
+    :root {
+      --bg-color: #1E1E1E;
+      --bg-secondary-color: #2A2A2A;
+      --text-color: #E0E0E0;
+      --text-secondary-color: #9E9E9E;
+      --primary-color: #0D99FF;
+      --border-color: #3A3A3A;
+    }
+
     body {
-      background-color: #f0f0f0;
-      font-family: Arial, sans-serif;
+      background-color: var(--bg-color);
+      color: var(--text-color);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
       margin: 0;
-      padding: 20px;
+      padding: 16px;
+      font-size: 12px;
     }
 
     h1 {
-      color: #333;
-    }
-
-    .button {
-      background-color: #007bff;
-      color: white;
-      border: none;
-      padding: 10px 15px;
-      text-align: center;
-      text-decoration: none;
-      display: inline-block;
+      color: var(--text-color);
       font-size: 16px;
-      margin: 4px 2px;
-      cursor: pointer;
-      border-radius: 5px;
-    }
-
-    .input {
-      padding: 10px;
-      margin: 10px 0;
-      border: 1px solid #ccc;
-      border-radius: 4px;
-      width: 100%;
+      font-weight: 600;
+      margin: 0 0 16px 0;
+      text-align: center;
     }
 
     #output-area {
-      margin-top: 12px;
-      padding: 10px;
-      border: 2px dashed #007bff;
-      background: #fff;
+      margin-top: 0;
+      padding: 0;
+      border: 1px solid var(--border-color);
+      background: var(--bg-secondary-color);
       text-align: center;
+      border-radius: 8px;
+      min-height: 150px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+    
+    #placeholder {
+      color: var(--text-secondary-color);
     }
 
-    #output-img {
+    #lg-canvas {
       max-width: 100%;
-      display: none;
+      max-height: 100%;
+      border-radius: 8px; /* Match parent */
+      object-fit: contain;
+    }
+
+    #lg-controls {
+      margin-top: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .control-row {
+      display: grid;
+      grid-template-columns: 1fr auto; /* Label | Value */
+      grid-template-rows: auto auto; /* Label/Value row | Slider row */
+      grid-template-areas: 
+        "label value"
+        "slider slider";
+      align-items: center;
+      row-gap: 8px;
+      color: var(--text-secondary-color);
+    }
+
+    .control-row > span { grid-area: label; }
+    .control-row > output { 
+      grid-area: value; 
+      background-color: var(--bg-secondary-color);
+      color: var(--text-color);
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 11px;
+      min-width: 24px;
+      text-align: center;
+      font-variant-numeric: tabular-nums;
+    }
+    .control-row > input[type="range"] { grid-area: slider; }
+
+    /* Slider Styles */
+    input[type="range"] {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 100%;
+      height: 20px; /* Increase height to accommodate thumb */
+      background: transparent;
+      outline: none;
+      margin: 0;
+    }
+
+    /* Track styles */
+    input[type="range"]::-webkit-slider-runnable-track {
+      width: 100%;
+      height: 4px;
+      background: var(--border-color);
+      border-radius: 4px;
+    }
+
+    input[type="range"]::-moz-range-track {
+      width: 100%;
+      height: 4px;
+      background: var(--border-color);
+      border-radius: 4px;
+      border: none;
+    }
+
+    /* Thumb styles */
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 14px;
+      height: 14px;
+      background: var(--primary-color);
+      cursor: pointer;
+      border-radius: 50%;
+      border: 2px solid var(--bg-color);
+    }
+
+    input[type="range"]::-moz-range-thumb {
+      width: 14px;
+      height: 14px;
+      background: var(--primary-color);
+      cursor: pointer;
+      border-radius: 50%;
+      border: 2px solid var(--bg-color);
+      box-sizing: border-box;
+    }
+
+    .button {
+      background-color: var(--primary-color);
+      color: white;
+      border: none;
+      padding: 8px 15px;
+      text-align: center;
+      text-decoration: none;
+      display: inline-block;
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      border-radius: 6px;
+      transition: background-color 0.2s ease;
+    }
+
+    .button:hover {
+      background-color: #0B7ACC;
     }
   </style>
 </head>
@@ -60,14 +167,30 @@
   </div>
 
   <!-- controls specific to liquid glass -->
-  <div id="lg-controls" style="margin-top:8px">
-    <label>Edge thickness <input type="range" id="edge" min="1" max="50" value="20"></label><br>
-    <label>Refraction strength <input type="range" id="strength" min="1" max="100" value="25"></label><br>
-    <label>Chromatic aberration <input type="range" id="ca" min="0" max="30" value="5"></label><br>
-    <label>Background blur <input type="range" id="frost" min="0" max="20" value="0"></label>
+  <div id="lg-controls">
+    <label class="control-row">
+      <span>Edge thickness</span>
+      <output id="edge-value">20</output>
+      <input type="range" id="edge" min="1" max="50" value="20">
+    </label>
+    <label class="control-row">
+      <span>Refraction strength</span>
+      <output id="strength-value">25</output>
+      <input type="range" id="strength" min="1" max="100" value="25">
+    </label>
+    <label class="control-row">
+      <span>Chromatic aberration</span>
+      <output id="ca-value">5</output>
+      <input type="range" id="ca" min="0" max="30" value="5">
+    </label>
+    <label class="control-row">
+      <span>Background blur</span>
+      <output id="frost-value">0</output>
+      <input type="range" id="frost" min="0" max="20" value="0">
+    </label>
   </div>
 
-  <button class="button" id="apply-btn" style="width:100%; margin-top: 8px;">Apply</button>
+  <button class="button" id="apply-btn" style="width:100%; margin-top: 16px;">Apply</button>
 
   <!-- inline script (replace old one) -->
   <script>
@@ -226,7 +349,20 @@
     }
     initGL();
 
-    /* sliders are now manually triggered */
+    /* sliders are now manually triggered, but update their value display */
+    const sliders = document.querySelectorAll('input[type="range"]');
+
+    function updateValueDisplay(slider) {
+      const output = document.getElementById(slider.id + '-value');
+      if (output) {
+        output.textContent = slider.value;
+      }
+    }
+
+    sliders.forEach(slider => {
+      updateValueDisplay(slider); // Set initial value
+      slider.addEventListener('input', () => updateValueDisplay(slider));
+    });
 
     function updateUniformsAndRedraw(params){
       if (!currentShape) return;
@@ -251,6 +387,7 @@
         document.getElementById('strength').value = msg.params.strength;
         document.getElementById('ca').value = msg.params.ca;
         document.getElementById('frost').value = msg.params.frost;
+        sliders.forEach(updateValueDisplay); // Update all value displays
         return;
       }
 
