@@ -1,5 +1,5 @@
 // Show the UI using the HTML content from manifest.json
-figma.showUI(__html__, { width: 320, height: 350 });
+figma.showUI(__html__, { width: 320, height: 400 });
 
 const OFFSET = 20; // px extra margin around the selection
 
@@ -28,7 +28,34 @@ function boundsEqual(a: typeof editState.lastBounds, b: typeof editState.lastBou
 }
 
 /* helpers */
-async function captureAndSend(target: SceneNode) {
+function parseLayerName(name: string): { [key: string]: number } | null {
+  if (!name.startsWith('[LG - ') || !name.endsWith(']')) return null;
+  const paramsStr = name.substring(6, name.length - 1);
+  const params: { [key: string]: number } = {};
+  const parts = paramsStr.split(' ');
+  try {
+    parts.forEach(part => {
+      if (part.startsWith('ET')) params.edge = parseFloat(part.substring(2));
+      if (part.startsWith('RS')) params.strength = parseFloat(part.substring(2));
+      if (part.startsWith('CA')) params.ca = parseFloat(part.substring(2));
+      if (part.startsWith('BB')) params.frost = parseFloat(part.substring(2));
+    });
+    if (params.edge === undefined || params.strength === undefined || params.ca === undefined || params.frost === undefined) return null;
+    return params;
+  } catch (e) {
+    return null;
+  }
+}
+
+function formatLayerName(params: { [key: string]: any }): string {
+  const et = `ET${params.edge}`;
+  const rs = `RS${params.strength}`;
+  const ca = `CA${params.ca}`;
+  const bb = `BB${params.frost}`;
+  return `[LG - ${et} ${rs} ${ca} ${bb}]`;
+}
+
+async function captureAndSend(target: SceneNode, params: any, context: 'apply' | 'update') {
     /* 1 — capture rectangle around the target with padding */
     const { width, height } = target as any;
     const absX = target.absoluteTransform[0][2];
@@ -98,17 +125,19 @@ async function captureAndSend(target: SceneNode) {
         };
     }
     /* 5 — send to UI */
-    figma.ui.postMessage({ type: 'image-captured', data: `data:image/png;base64,${base64}`, shape: shapeProps });
+    figma.ui.postMessage({ type: 'image-captured', data: `data:image/png;base64,${base64}`, shape: shapeProps, params, context });
     editState.lastBounds = nodeBounds(target);
 }
 
 /* ─────────── event handlers ─────────── */
 function onSelectionChange() {
   const sel = figma.currentPage.selection;
-  editState.node   = sel.length === 1 ? sel[0] : null;
-  editState.lastBounds = editState.node ? nodeBounds(editState.node) : null;
+  editState.node = sel.length === 1 ? sel[0] : null;
   if (editState.node) {
-    captureAndSend(editState.node); // first preview
+    const params = parseLayerName(editState.node.name);
+    if (params) {
+      figma.ui.postMessage({ type: 'update-ui-controls', params });
+    }
   }
 }
 
@@ -118,8 +147,10 @@ function onDocumentChange(ev: DocumentChangeEvent) {
   const now = nodeBounds(editState.node);
   if (boundsEqual(now, editState.lastBounds)) return;
 
-  // Always use intuitive mode: capture immediately
-  captureAndSend(editState.node);
+  const params = parseLayerName(editState.node.name);
+  if (params) {
+    captureAndSend(editState.node, params, 'update');
+  }
 }
 
 /* register global listeners */
@@ -147,6 +178,15 @@ figma.ui.onmessage = async (msg) => {
     figma.closePlugin();
   }
 
+  if (msg.type === 'apply-liquid-glass') {
+    if (editState.node) {
+      captureAndSend(editState.node, msg.params, 'apply');
+    } else {
+      figma.notify("Please select a shape first.");
+    }
+    return;
+  }
+
   /* ───────────────── apply image as background ───────────── */
   if (msg.type === 'apply-image-fill') {
     const node = editState.node; // Use the currently tracked node
@@ -165,43 +205,47 @@ figma.ui.onmessage = async (msg) => {
 
     node.fills = [imagePaint];
 
-    // Apply liquid glass styles unconditionally
-    node.strokeWeight = 2;
-    node.strokes = [{
-      type: 'GRADIENT_ANGULAR',
-      gradientTransform: [[1, 0, 0], [0, 1, 0]],
-      gradientStops: [
-        { position: 0.12, color: { r: 1, g: 1, b: 1, a: 1.0 } },
-        { position: 0.28, color: { r: 1, g: 1, b: 1, a: 0.1 } },
-        { position: 0.36, color: { r: 1, g: 1, b: 1, a: 0.1 } },
-        { position: 0.64, color: { r: 1, g: 1, b: 1, a: 1.0 } },
-        { position: 0.78, color: { r: 1, g: 1, b: 1, a: 0.1 } },
-        { position: 0.89, color: { r: 1, g: 1, b: 1, a: 0.1 } },
-      ],
-      visible: true
-    }];
+    // On manual apply, set styles and rename layer. On update, do nothing more.
+    if (msg.context === 'apply') {
+      node.strokeWeight = 2;
+      node.strokes = [{
+        type: 'GRADIENT_ANGULAR',
+        gradientTransform: [[1, 0, 0], [0, 1, 0]],
+        gradientStops: [
+          { position: 0.12, color: { r: 1, g: 1, b: 1, a: 1.0 } },
+          { position: 0.28, color: { r: 1, g: 1, b: 1, a: 0.1 } },
+          { position: 0.36, color: { r: 1, g: 1, b: 1, a: 0.1 } },
+          { position: 0.64, color: { r: 1, g: 1, b: 1, a: 1.0 } },
+          { position: 0.78, color: { r: 1, g: 1, b: 1, a: 0.1 } },
+          { position: 0.89, color: { r: 1, g: 1, b: 1, a: 0.1 } },
+        ],
+        visible: true
+      }];
 
-    node.effects = [
-      { // Inner Shadow
-        type: 'INNER_SHADOW',
-        color: { r: 0, g: 0, b: 0, a: 0.4 },
-        offset: { x: 12, y: 12 },
-        radius: 30,
-        spread: 0,
-        visible: true,
-        blendMode: 'NORMAL'
-      },
-      { // Drop Shadow
-        type: 'DROP_SHADOW',
-        color: { r: 0, g: 0, b: 0, a: 0.25 },
-        offset: { x: 0, y: 6 },
-        radius: 5,
-        spread: 0,
-        visible: true,
-        blendMode: 'NORMAL'
-      }
-    ];
-
-    figma.notify('Background applied');
+      node.effects = [
+        { // Inner Shadow
+          type: 'INNER_SHADOW',
+          color: { r: 0, g: 0, b: 0, a: 0.7 },
+          offset: { x: 12, y: 12 },
+          radius: 30,
+          spread: 0,
+          visible: true,
+          blendMode: 'NORMAL'
+        },
+        { // Drop Shadow
+          type: 'DROP_SHADOW',
+          color: { r: 0, g: 0, b: 0, a: 0.25 },
+          offset: { x: 0, y: 6 },
+          radius: 5,
+          spread: 0,
+          visible: true,
+          blendMode: 'NORMAL'
+        }
+      ];
+      node.name = formatLayerName(msg.params);
+      figma.notify('Liquid Glass applied');
+    } else {
+      figma.notify('Background updated');
+    }
   }
 };

@@ -55,7 +55,7 @@
   <h1>Liquid Glass</h1>
 
   <div id="output-area">
-    <em id="placeholder">Select a shape to see the effect...</em>
+    <em id="placeholder">Select a shape, adjust parameters, and click Apply.</em>
     <canvas id="lg-canvas" width="1" height="1" style="display:none"></canvas>
   </div>
 
@@ -66,6 +66,8 @@
     <label>Chromatic aberration <input type="range" id="ca" min="0" max="30" value="5"></label><br>
     <label>Background blur <input type="range" id="frost" min="0" max="20" value="0"></label>
   </div>
+
+  <button class="button" id="apply-btn" style="width:100%; margin-top: 8px;">Apply</button>
 
   <!-- inline script (replace old one) -->
   <script>
@@ -176,6 +178,16 @@
     const OFFSET=20;
     const send=(t,p)=>parent.postMessage({pluginMessage:{type:t,...p}},'*');
 
+    document.getElementById('apply-btn').onclick = () => {
+      const params = {
+        edge: +document.getElementById('edge').value,
+        strength: +document.getElementById('strength').value,
+        ca: +document.getElementById('ca').value,
+        frost: +document.getElementById('frost').value,
+      };
+      send('apply-liquid-glass', { params });
+    };
+
     /* WebGL init */
     const canvas=document.getElementById('lg-canvas');
     const gl=canvas.getContext('webgl', { preserveDrawingBuffer: true });
@@ -214,36 +226,41 @@
     }
     initGL();
 
-    /* sliders update uniforms */
-    const edgeSlider = document.getElementById('edge');
-    const strengthSlider = document.getElementById('strength');
-    const caSlider = document.getElementById('ca');
-    const frostSlider = document.getElementById('frost');
-    [edgeSlider, strengthSlider, caSlider, frostSlider].forEach(slider => {
-      slider.oninput = updateUniformsAndRedraw;
-    });
+    /* sliders are now manually triggered */
 
-    function updateUniformsAndRedraw(){
+    function updateUniformsAndRedraw(params){
       if (!currentShape) return;
       gl.useProgram(program);
-      gl.uniform1f(uniforms.edge, +edgeSlider.value);
-      gl.uniform1f(uniforms.strength, +strengthSlider.value);
-      gl.uniform1f(uniforms.ca, +caSlider.value);
-      gl.uniform1f(uniforms.frost, +frostSlider.value);
+      gl.uniform1f(uniforms.edge, params.edge);
+      gl.uniform1f(uniforms.strength, params.strength);
+      gl.uniform1f(uniforms.ca, params.ca);
+      gl.uniform1f(uniforms.frost, params.frost);
       gl.uniform2f(uniforms.rectSize, currentShape.width, currentShape.height);
       gl.uniform1f(uniforms.cornerRadius, currentShape.cornerRadius);
       redraw();
     }
 
     /* message handling */
-    let tex=null, currentShape = null;
+    let tex=null, currentShape = null, currentContext = null, currentParams = null;
     window.onmessage=e=>{
       const msg=e.data.pluginMessage;
-      if(!msg||msg.type!=='image-captured'||msg.error)return;
+      if (!msg) return;
+
+      if (msg.type === 'update-ui-controls') {
+        document.getElementById('edge').value = msg.params.edge;
+        document.getElementById('strength').value = msg.params.strength;
+        document.getElementById('ca').value = msg.params.ca;
+        document.getElementById('frost').value = msg.params.frost;
+        return;
+      }
+
+      if(msg.type!=='image-captured'||msg.error)return;
 
       if(msg.shape){
         document.getElementById('placeholder')?.remove();
         currentShape = msg.shape;
+        currentContext = msg.context;
+        currentParams = msg.params;
         const img=new Image();
         img.onload=()=>{
           canvas.width=img.width; canvas.height=img.height;
@@ -261,7 +278,7 @@
           gl.uniform2f(uniforms.resolution, canvas.width, canvas.height);
           gl.uniform1i(uniforms.backgroundTexture, 0);
 
-          updateUniformsAndRedraw();
+          updateUniformsAndRedraw(msg.params);
         };
         img.src=msg.data;
       }
@@ -272,7 +289,7 @@
       gl.clear(gl.COLOR_BUFFER_BIT);
       gl.drawArrays(gl.TRIANGLE_STRIP,0,4);
       const croppedDataUrl = cropCanvasResult(canvas, OFFSET);
-      send('apply-image-fill',{data:croppedDataUrl});
+      send('apply-image-fill',{data:croppedDataUrl, context: currentContext, params: currentParams});
     }
 
     function cropCanvasResult(sourceCanvas, offset) {
