@@ -49,9 +49,10 @@ function restoreFill(n: SceneNode) {
 }
 
 let currentEffect: 'none' | 'invert' | 'liquid' = 'invert';
+let currentMode:   'performance' | 'intuitive' = 'performance';  // NEW
 
 async function captureAndSend(target: SceneNode) {
-  if (currentEffect !== 'invert') return; // liquid glass TBD
+  if (currentEffect==='none') return; // liquid glass TBD
 
     /* 1 — capture rectangle around the target with padding */
     const { width, height } = target as any;
@@ -104,8 +105,25 @@ async function captureAndSend(target: SceneNode) {
     slice.remove();
     for (const { node, opacity } of nodesToRestore) (node as any).opacity = opacity;
 
+    // Get shape properties for the liquid glass effect
+    let shapeProps = null;
+    if ('cornerRadius' in target) {
+        let radius = 0;
+        const cr = (target as any).cornerRadius;
+        if (typeof cr === 'number') {
+            radius = cr;
+        } else if (Array.isArray(cr)) {
+            radius = cr[0] || 0;
+        }
+        // If cr is undefined or figma.mixed (symbol), radius stays 0.
+        shapeProps = {
+            width: (target as any).width,
+            height: (target as any).height,
+            cornerRadius: radius
+        };
+    }
     /* 5 — send to UI */
-    figma.ui.postMessage({ type: 'image-captured', data: `data:image/png;base64,${base64}` });
+    figma.ui.postMessage({ type: 'image-captured', data: `data:image/png;base64,${base64}`, shape: shapeProps });
     editState.lastBounds = nodeBounds(target);
 }
 
@@ -124,14 +142,18 @@ function onSelectionChange() {
 }
 
 function onDocumentChange(ev: DocumentChangeEvent) {
-  if (!editState.node) return;
-  if (currentEffect === 'none') return; // ignore when disabled
+  if (!editState.node || currentEffect==='none') return;
 
-  const current = nodeBounds(editState.node);
-  if (boundsEqual(current, editState.lastBounds)) return; // position & size unchanged
+  const now = nodeBounds(editState.node);
+  if (boundsEqual(now, editState.lastBounds)) return;
+  editState.lastBounds = now;
 
-  editState.lastBounds = current; // store new bounds
+  if(currentMode==='intuitive'){
+    captureAndSend(editState.node);       // immediate, no overlay
+    return;
+  }
 
+   /* Performance mode (debounced) */
   // first change → enter edit mode
   if (!editState.inEdit) {
     applyTempEditFill(editState.node);
@@ -247,10 +269,8 @@ figma.ui.onmessage = async (msg) => {
 
   /* ───────────────── apply inverted image as background ───────────── */
   if (msg.type === 'apply-image-fill') {
-    const selection = figma.currentPage.selection;
-    if (selection.length !== 1) return;
-    const node = selection[0];
-    if (!('fills' in node)) return;
+    const node = editState.node; // Use the currently tracked node
+    if (!node || !('fills' in node)) return;
 
     const base64 = msg.data.split(',')[1];
     const bytes  = figma.base64Decode(base64);
@@ -273,5 +293,13 @@ figma.ui.onmessage = async (msg) => {
     figma.notify(`Effect: ${currentEffect}`);
     return;
   }
+
+  /* mode selector --------------------------------------------------- */
+  if (msg.type === 'mode-change') {
+    currentMode = msg.mode;            // 'performance' | 'intuitive'
+    figma.notify(`Mode: ${currentMode}`);
+    return;
+  }
+
   // You can handle other messages from the UI here.
 };
