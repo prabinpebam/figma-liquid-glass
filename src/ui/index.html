@@ -54,31 +54,13 @@
 <body>
   <h1>Liquid Glass</h1>
 
-  <!-- effect selector -->
-  <fieldset>
-    <legend>Effect</legend>
-    <label><input type="radio" name="fx" value="none"   /> None</label><br>
-    <label><input type="radio" name="fx" value="liquid" /> Liquid glass</label><br>
-    <label><input type="radio" name="fx" value="invert" checked/> Invert</label>
-  </fieldset>
-
-  <!-- mode selector -->
-  <fieldset>
-    <legend>Mode</legend>
-    <label><input type="radio" name="mode" value="performance" checked/> Performance</label><br>
-    <label><input type="radio" name="mode" value="intuitive" /> Intuitive</label>
-  </fieldset>
-
-  <button class="button" id="capture-btn">Capture image</button>
-
   <div id="output-area">
-    <em id="placeholder">Captured image will appear here…</em>
+    <em id="placeholder">Select a shape to see the effect...</em>
     <canvas id="lg-canvas" width="1" height="1" style="display:none"></canvas>
-    <img    id="output-img" />
   </div>
 
   <!-- controls specific to liquid glass -->
-  <div id="lg-controls" style="display:none;margin-top:8px">
+  <div id="lg-controls" style="margin-top:8px">
     <label>Edge thickness <input type="range" id="edge" min="1" max="50" value="20"></label><br>
     <label>Refraction strength <input type="range" id="strength" min="1" max="100" value="25"></label><br>
     <label>Chromatic aberration <input type="range" id="ca" min="0" max="30" value="5"></label><br>
@@ -194,22 +176,6 @@
     const OFFSET=20;
     const send=(t,p)=>parent.postMessage({pluginMessage:{type:t,...p}},'*');
 
-    /* radio – effect + mode */
-    document.querySelectorAll('input[name="fx"]').forEach(i=>{
-      i.addEventListener('change',()=>{ if(i.checked){
-        const isLiquid = i.value === 'liquid';
-        document.getElementById('lg-controls').style.display = isLiquid ? 'block' : 'none';
-        document.getElementById('output-img').style.display = i.value === 'invert' ? 'block' : 'none';
-        document.getElementById('lg-canvas').style.display = isLiquid ? 'block' : 'none';
-        send('effect-change',{effect:i.value});
-      }});
-    });
-    document.querySelectorAll('input[name="mode"]').forEach(i=>{
-      i.addEventListener('change',()=>i.checked&&send('mode-change',{mode:i.value}));
-    });
-
-    document.getElementById('capture-btn').onclick=()=>send('capture-image');
-
     /* WebGL init */
     const canvas=document.getElementById('lg-canvas');
     const gl=canvas.getContext('webgl', { preserveDrawingBuffer: true });
@@ -275,22 +241,13 @@
       const msg=e.data.pluginMessage;
       if(!msg||msg.type!=='image-captured'||msg.error)return;
 
-      const effect=document.querySelector('input[name="fx"]:checked')?.value;
-      if(effect==='invert'){
-          cropAndInvert(msg.data).then(url=>{
-            const img=document.getElementById('output-img');
-            img.src=url;img.style.display='block';
-            document.getElementById('placeholder')?.remove();
-            send('apply-image-fill',{data:url});
-          });
-          return;
-      }
-
-      if(effect==='liquid' && msg.shape){
+      if(msg.shape){
+        document.getElementById('placeholder')?.remove();
         currentShape = msg.shape;
         const img=new Image();
         img.onload=()=>{
           canvas.width=img.width; canvas.height=img.height;
+          canvas.style.display = 'block';
           gl.viewport(0,0,canvas.width,canvas.height);
 
           if(!tex) tex=gl.createTexture();
@@ -328,20 +285,6 @@
         const ctx = tempCanvas.getContext('2d');
         ctx.drawImage(sourceCanvas, offset, offset, w, h, 0, 0, w, h);
         return tempCanvas.toDataURL('image/png');
-    }
-
-    function cropAndInvert(dataURL){
-      return new Promise(res=>{
-        const i=new Image();i.onload=()=>{
-          const w=i.width-OFFSET*2,h=i.height-OFFSET*2,
-                c=document.createElement('canvas');c.width=w;c.height=h,
-                x=c.getContext('2d');
-          x.drawImage(i,OFFSET,OFFSET,w,h,0,0,w,h);
-          const id=x.getImageData(0,0,w,h),d=id.data;
-          for(let p=0;p<d.length;p+=4){d[p]=255-d[p];d[p+1]=255-d[p+1];d[p+2]=255-d[p+2];}
-          x.putImageData(id,0,0);res(c.toDataURL('image/png'));
-        };i.src=dataURL;
-      });
     }
   </script>
  </body>
