@@ -81,7 +81,8 @@
   <div id="lg-controls" style="display:none;margin-top:8px">
     <label>Edge thickness <input type="range" id="edge" min="1" max="50" value="20"></label><br>
     <label>Refraction strength <input type="range" id="strength" min="1" max="100" value="25"></label><br>
-    <label>Chromatic aberration <input type="range" id="ca" min="0" max="30" value="5"></label>
+    <label>Chromatic aberration <input type="range" id="ca" min="0" max="30" value="5"></label><br>
+    <label>Background blur <input type="range" id="frost" min="0" max="20" value="0"></label>
   </div>
 
   <!-- inline script (replace old one) -->
@@ -106,6 +107,7 @@
       uniform float u_edgeDistortionThickness;
       uniform float u_refractionStrength;
       uniform float u_chromaticAberrationAmount;
+      uniform float u_frostiness;
 
       float sdRoundedBox( vec2 p, vec2 b, float r ) {
           vec2 q = abs(p) - b + r;
@@ -118,22 +120,52 @@
       }
 
       vec4 renderLiquidGlass(vec2 currentPixelCoord, vec2 normDirToCenter, bool caActive, float distortion) {
-          vec4 refractedBackground;
-          if (caActive) {
-              float rDist = max(0.0, distortion - u_chromaticAberrationAmount * 0.5);
-              float bDist = distortion + u_chromaticAberrationAmount * 0.5;
-              vec2 rCoord = currentPixelCoord - normDirToCenter * rDist;
-              vec2 gCoord = currentPixelCoord - normDirToCenter * distortion;
-              vec2 bCoord = currentPixelCoord - normDirToCenter * bDist;
-              refractedBackground.r = renderBackground(rCoord).r;
-              refractedBackground.g = renderBackground(gCoord).g;
-              refractedBackground.b = renderBackground(bCoord).b;
-              refractedBackground.a = renderBackground(gCoord).a;
-          } else {
-              vec2 samplingCoord = currentPixelCoord - normDirToCenter * distortion;
-              refractedBackground = renderBackground(samplingCoord);
+          // If no blur, do the fast, single-sample version
+          if (u_frostiness < 0.1) {
+              if (caActive) {
+                  float rDist = max(0.0, distortion - u_chromaticAberrationAmount * 0.5);
+                  float bDist = distortion + u_chromaticAberrationAmount * 0.5;
+                  vec2 rCoord = currentPixelCoord - normDirToCenter * rDist;
+                  vec2 gCoord = currentPixelCoord - normDirToCenter * distortion;
+                  vec2 bCoord = currentPixelCoord - normDirToCenter * bDist;
+                  vec4 color;
+                  color.r = renderBackground(rCoord).r;
+                  color.g = renderBackground(gCoord).g;
+                  color.b = renderBackground(bCoord).b;
+                  color.a = renderBackground(gCoord).a;
+                  return color;
+              } else {
+                  vec2 samplingCoord = currentPixelCoord - normDirToCenter * distortion;
+                  return renderBackground(samplingCoord);
+              }
           }
-          return refractedBackground;
+
+          // Frosted version: loop over a 5x5 kernel and average the results
+          vec4 totalColor = vec4(0.0);
+          float sampleCount = 0.0;
+          for (int x = -2; x <= 2; x++) {
+              for (int y = -2; y <= 2; y++) {
+                  vec2 frostOffset = vec2(float(x), float(y)) * u_frostiness * 0.5;
+                  vec2 baseFrostedPixelCoord = currentPixelCoord + frostOffset;
+
+                  if (caActive) {
+                      float rDist = max(0.0, distortion - u_chromaticAberrationAmount * 0.5);
+                      float bDist = distortion + u_chromaticAberrationAmount * 0.5;
+                      vec2 rCoord = baseFrostedPixelCoord - normDirToCenter * rDist;
+                      vec2 gCoord = baseFrostedPixelCoord - normDirToCenter * distortion;
+                      vec2 bCoord = baseFrostedPixelCoord - normDirToCenter * bDist;
+                      totalColor.r += renderBackground(rCoord).r;
+                      totalColor.g += renderBackground(gCoord).g;
+                      totalColor.b += renderBackground(bCoord).b;
+                      totalColor.a += renderBackground(gCoord).a;
+                  } else {
+                      vec2 samplingCoord = baseFrostedPixelCoord - normDirToCenter * distortion;
+                      totalColor += renderBackground(samplingCoord);
+                  }
+                  sampleCount += 1.0;
+              }
+          }
+          return totalColor / sampleCount;
       }
 
       void main() {
@@ -191,6 +223,7 @@
       uniforms.edge = gl.getUniformLocation(program,'u_edgeDistortionThickness');
       uniforms.strength = gl.getUniformLocation(program,'u_refractionStrength');
       uniforms.ca = gl.getUniformLocation(program,'u_chromaticAberrationAmount');
+      uniforms.frost = gl.getUniformLocation(program, 'u_frostiness');
       uniforms.resolution = gl.getUniformLocation(program,'u_resolution');
       uniforms.rectSize = gl.getUniformLocation(program, 'u_rectangleSize');
       uniforms.cornerRadius = gl.getUniformLocation(program, 'u_rectangleCornerRadius');
@@ -219,7 +252,8 @@
     const edgeSlider = document.getElementById('edge');
     const strengthSlider = document.getElementById('strength');
     const caSlider = document.getElementById('ca');
-    [edgeSlider, strengthSlider, caSlider].forEach(slider => {
+    const frostSlider = document.getElementById('frost');
+    [edgeSlider, strengthSlider, caSlider, frostSlider].forEach(slider => {
       slider.oninput = updateUniformsAndRedraw;
     });
 
@@ -229,6 +263,7 @@
       gl.uniform1f(uniforms.edge, +edgeSlider.value);
       gl.uniform1f(uniforms.strength, +strengthSlider.value);
       gl.uniform1f(uniforms.ca, +caSlider.value);
+      gl.uniform1f(uniforms.frost, +frostSlider.value);
       gl.uniform2f(uniforms.rectSize, currentShape.width, currentShape.height);
       gl.uniform1f(uniforms.cornerRadius, currentShape.cornerRadius);
       redraw();
