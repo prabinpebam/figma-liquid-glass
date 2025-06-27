@@ -207,7 +207,7 @@ figma.ui.onmessage = async (msg) => {
 
     // On manual apply, set styles and rename layer. On update, do nothing more.
     if (msg.context === 'apply') {
-      node.strokeWeight = 2;
+      node.strokeWeight = 1;
       node.strokes = [{
         type: 'GRADIENT_ANGULAR',
         gradientTransform: [[1, 0, 0], [0, 1, 0]],
@@ -225,7 +225,7 @@ figma.ui.onmessage = async (msg) => {
       node.effects = [
         { // Inner Shadow
           type: 'INNER_SHADOW',
-          color: { r: 0, g: 0, b: 0, a: 0.7 },
+          color: { r: 0, g: 0, b: 0, a: 0.4 },
           offset: { x: 12, y: 12 },
           radius: 30,
           spread: 0,
