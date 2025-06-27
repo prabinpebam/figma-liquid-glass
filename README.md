@@ -1,13 +1,14 @@
 # Liquid Glass Figma Plugin
 
 ## Overview
-"Liquid Glass" is a Figma plugin designed to enhance your design workflow by providing unique features and functionalities. This README provides instructions on how to set up and run the plugin.
+"Liquid Glass" is a Figma plugin that creates realistic liquid glass effects using WebGL shaders. The plugin captures the background beneath selected shapes and applies advanced visual effects including refraction distortion, chromatic aberration, and background blur to simulate the appearance of liquid glass.
 
 ## Getting Started
 
 ### Prerequisites
 - Node.js (version 12 or later)
 - npm (Node package manager)
+- Figma (desktop or web version)
 
 ### Installation
 1. Clone the repository:
@@ -22,46 +23,111 @@
    ```
 
 ### Running the Plugin
-1. Open Figma and navigate to the Plugins menu.
-2. Select "Development" and then "New Plugin...".
-3. Choose "Link existing plugin" and select the `manifest.json` file from the `liquid-glass` directory.
-4. You can now run the plugin from the Plugins menu in Figma.
+1. Build the plugin:
+   ```
+   npm run build
+   ```
+2. Open Figma and navigate to the Plugins menu.
+3. Select "Development" and then "Import plugin from manifest...".
+4. Select the `manifest.json` file from the `liquid-glass` directory.
+5. You can now run the plugin from the Plugins menu in Figma.
+
+## Features
+
+### Liquid Glass Effect
+- **Real-time background capture** of content beneath selected shapes
+- **WebGL-powered rendering** with advanced shader effects:
+  - Edge distortion with customizable thickness (1-50px)
+  - Refraction strength control (1-100)
+  - Chromatic aberration (0-30)
+  - Background blur/frostiness (0-20)
+
+### Dual Trigger System
+1. **Manual Application**
+   - Select a shape, adjust parameters, and click "Apply"
+   - Applies complete Figma styling (borders, shadows, effects)
+   - Layer is renamed with effect parameters: `[LG - ET20 RS25 CA5 BB0]`
+
+2. **Automatic Updates**
+   - Shapes with active Liquid Glass effect automatically update when moved or resized
+   - Effect parameters are parsed from the layer name
+   - Only updates the background image, preserves all other Figma properties
+
+### Applied Figma Styling
+When manually applying Liquid Glass effect, the plugin adds:
+- **Angular gradient border** (2px thickness with white highlights)
+- **Inner shadow** (offset: 12,12 | blur: 30 | opacity: 70%)
+- **Drop shadow** (offset: 0,6 | blur: 5 | opacity: 25%)
+
+## Development
 
 ### Building the Plugin
-To build the TypeScript files, run:
-```
-npm run build
-```
-
-## Features (current WIP)
-- Live background capture of anything beneath the selected layer.
-- Effect selector  
-  - **None** – disable all processing.  
-  - **Liquid glass** – placeholder for upcoming frosted-glass effect.  
-  - **Invert** – captures, crops and colour-inverts the background, then sets it as an image fill.
-- Automatic refresh after move / resize (throttled for performance).
-- Temporary white overlay while editing to indicate that the final effect will be applied.
-
-## Development scripts
 ```bash
-# one-off compile
+# One-time build
 npm run build
 
-# watch TypeScript & HTML, rebuild automatically
+# Watch mode for development
 npm run watch
+
+# Type checking only
+npm run type-check
 ```
 
-The compiled files land in the `dist` folder; `manifest.json` already points to them.
+### Project Structure
+```
+liquid-glass/
+├── src/
+│   ├── code.ts           # Main plugin logic
+│   └── ui/
+│       └── index.html    # Plugin UI with embedded WebGL shaders
+├── dist/                 # Compiled output
+├── manifest.json         # Figma plugin manifest
+└── package.json
+```
 
-## Using the plugin inside Figma
-1. Select a single frame/shape.  
-2. Open the plugin → choose an effect with the radio buttons.  
-3. Move or resize the layer – the chosen effect updates automatically on release.
+## Usage
 
-## Roadmap
-- Implement “Liquid glass” effect (blur + transparency).
-- Add settings for offset, blur radius, and inversion strength.
-- Performance tuning for large canvases.
+### Basic Workflow
+1. **Select a shape** in Figma (rectangle, frame, etc.)
+2. **Open the Liquid Glass plugin**
+3. **Adjust parameters** using the sliders:
+   - Edge thickness: Controls the width of the distortion effect
+   - Refraction strength: Intensity of the glass distortion
+   - Chromatic aberration: Color fringing effect at edges
+   - Background blur: Frosting/blur effect on the background
+4. **Click "Apply"** to apply the effect with full Figma styling
+
+### Automatic Updates
+- Shapes with applied Liquid Glass effect (identifiable by layer names like `[LG - ET20 RS25 CA5 BB0]`) will automatically update their background when moved or resized
+- The effect parameters are preserved from the original application
+- No need to manually reapply unless you want to change the effect parameters
+
+### Layer Naming Convention
+Applied effects use this naming format:
+- `[LG - ET20 RS25 CA5 BB0]`
+  - `LG` = Liquid Glass
+  - `ET20` = Edge Thickness: 20
+  - `RS25` = Refraction Strength: 25
+  - `CA5` = Chromatic Aberration: 5
+  - `BB0` = Background Blur: 0
+
+## Technical Details
+
+### WebGL Shaders
+The plugin uses custom WebGL fragment shaders to achieve:
+- **Signed Distance Functions (SDF)** for precise shape calculations
+- **Multi-sample blur** for frosting effects
+- **Chromatic aberration** with separate RGB channel distortion
+- **Real-time refraction** based on distance from shape edges
+
+### Performance
+- **Automatic mode** provides real-time updates as you move/resize shapes
+- **Optimized rendering** with efficient WebGL texture handling
+- **Smart caching** to avoid unnecessary recalculations
+
+## Browser Compatibility
+- Requires WebGL support (available in all modern browsers)
+- Tested on Chrome, Firefox, Safari, and Figma desktop app
 
 ## Contributing
 If you would like to contribute to the project, please fork the repository and submit a pull request with your changes.
