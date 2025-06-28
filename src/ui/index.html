@@ -162,7 +162,7 @@
   <h1>Liquid Glass</h1>
 
   <div id="output-area">
-    <em id="placeholder">Select a shape, adjust parameters, and click Apply.</em>
+    <em id="placeholder">Select or create a Liquid Glass element.</em>
     <canvas id="lg-canvas" width="1" height="1" style="display:none"></canvas>
   </div>
 
@@ -190,7 +190,7 @@
     </label>
   </div>
 
-  <button class="button" id="apply-btn" style="width:100%; margin-top: 16px;">Apply</button>
+  <button class="button" id="create-btn" style="width:100%; margin-top: 16px;">Create Liquid Glass</button>
 
   <!-- inline script (replace old one) -->
   <script>
@@ -301,14 +301,14 @@
     const OFFSET=20;
     const send=(t,p)=>parent.postMessage({pluginMessage:{type:t,...p}},'*');
 
-    document.getElementById('apply-btn').onclick = () => {
+    document.getElementById('create-btn').onclick = () => {
       const params = {
         edge: +document.getElementById('edge').value,
         strength: +document.getElementById('strength').value,
         ca: +document.getElementById('ca').value,
         frost: +document.getElementById('frost').value,
       };
-      send('apply-liquid-glass', { params });
+      send('create-lg-element', { params });
     };
 
     /* WebGL init */
@@ -349,19 +349,32 @@
     }
     initGL();
 
-    /* sliders are now manually triggered, but update their value display */
+    /* sliders update their value display and trigger real-time updates */
     const sliders = document.querySelectorAll('input[type="range"]');
+    let isSelected = false;
 
     function updateValueDisplay(slider) {
       const output = document.getElementById(slider.id + '-value');
-      if (output) {
-        output.textContent = slider.value;
-      }
+      if (output) output.textContent = slider.value;
+    }
+
+    function handleSliderChange() {
+      if (!isSelected) return;
+      const params = {
+        edge: +document.getElementById('edge').value,
+        strength: +document.getElementById('strength').value,
+        ca: +document.getElementById('ca').value,
+        frost: +document.getElementById('frost').value,
+      };
+      send('update-lg-element', { params });
     }
 
     sliders.forEach(slider => {
       updateValueDisplay(slider); // Set initial value
-      slider.addEventListener('input', () => updateValueDisplay(slider));
+      slider.addEventListener('input', () => {
+        updateValueDisplay(slider);
+        handleSliderChange();
+      });
     });
 
     function updateUniformsAndRedraw(params){
@@ -377,17 +390,18 @@
     }
 
     /* message handling */
-    let tex=null, currentShape = null, currentContext = null, currentParams = null;
+    let tex=null, currentShape = null;
     window.onmessage=e=>{
       const msg=e.data.pluginMessage;
       if (!msg) return;
 
       if (msg.type === 'update-ui-controls') {
+        isSelected = true;
         document.getElementById('edge').value = msg.params.edge;
         document.getElementById('strength').value = msg.params.strength;
         document.getElementById('ca').value = msg.params.ca;
         document.getElementById('frost').value = msg.params.frost;
-        sliders.forEach(updateValueDisplay); // Update all value displays
+        sliders.forEach(updateValueDisplay);
         return;
       }
 
@@ -396,8 +410,6 @@
       if(msg.shape){
         document.getElementById('placeholder')?.remove();
         currentShape = msg.shape;
-        currentContext = msg.context;
-        currentParams = msg.params;
         const img=new Image();
         img.onload=()=>{
           canvas.width=img.width; canvas.height=img.height;
@@ -406,7 +418,7 @@
 
           if(!tex) tex=gl.createTexture();
           gl.bindTexture(gl.TEXTURE_2D,tex);
-          gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true); // Flip the image to match WebGL's coordinate system
+          gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
           gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR);
           gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
           gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
@@ -426,7 +438,7 @@
       gl.clear(gl.COLOR_BUFFER_BIT);
       gl.drawArrays(gl.TRIANGLE_STRIP,0,4);
       const croppedDataUrl = cropCanvasResult(canvas, OFFSET);
-      send('apply-image-fill',{data:croppedDataUrl, context: currentContext, params: currentParams});
+      send('apply-image-fill',{data:croppedDataUrl});
     }
 
     function cropCanvasResult(sourceCanvas, offset) {
