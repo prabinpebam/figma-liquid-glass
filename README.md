@@ -1,7 +1,12 @@
-# Liquid Glass Figma Plugin
+# <img src="./assets/icon.png" width="48" align="center"> Liquid Glass Figma Plugin
+
+![Liquid Glass Plugin Banner](assets\liquid-glass-banner.png)
 
 ## Overview
 "Liquid Glass" is a Figma plugin that creates and manages realistic liquid glass components using WebGL shaders. The plugin generates a pre-structured, multi-layer frame that captures the background beneath it and applies advanced visual effects like refraction, chromatic aberration, and blur to simulate a liquid glass appearance.
+
+## UI
+![Liquid Glass Plugin Banner](assets\liquid-glass-ui-panel.png)
 
 ## Getting Started
 
@@ -94,11 +99,19 @@ liquid-glass/
 │   └── ui/
 │       └── index.html    # Self-contained UI (HTML, CSS, JS, WebGL Shaders)
 ├── dist/                 # Compiled output
+├── assets/               # Image assets for README
+│   ├── promo-banner.png
+│   ├── plugin-ui.png
+│   └── icon.png
 ├── manifest.json         # Figma plugin manifest
 └── package.json
 ```
 
 ## Usage
+
+This is the plugin UI you will be working with:
+
+![Plugin UI](./assets/plugin-ui.png)
 
 ### Creating an Element
 1. **Open the Liquid Glass plugin**.
