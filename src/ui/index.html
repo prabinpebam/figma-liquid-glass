@@ -403,11 +403,24 @@
         document.getElementById('ca').value = msg.params.ca;
         document.getElementById('frost').value = msg.params.frost;
         sliders.forEach(updateValueDisplay);
+        // Trigger an update to show the preview for the selected item
+        if (msg.isSelected) {
+          send('update-lg-element', { params: msg.params });
+        }
         return;
       }
 
       if (msg.type === 'selection-cleared') {
         createBtn.disabled = false;
+        // Optional: clear canvas or show placeholder
+        canvas.style.display = 'none';
+        const placeholder = document.getElementById('placeholder');
+        if (!placeholder) {
+          const newPlaceholder = document.createElement('em');
+          newPlaceholder.id = 'placeholder';
+          newPlaceholder.textContent = 'Select or create a Liquid Glass element.';
+          document.getElementById('output-area').prepend(newPlaceholder);
+        }
         return;
       }
 

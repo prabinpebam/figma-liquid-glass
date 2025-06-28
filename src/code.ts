@@ -1,5 +1,5 @@
 // Show the UI using the HTML content from manifest.json
-figma.showUI(__html__, { width: 320, height: 400 });
+figma.showUI(__html__, { width: 320, height: 500 });
 
 const OFFSET = 20;
 
@@ -169,7 +169,7 @@ function onSelectionChange() {
     editState.lastBounds = nodeBounds(editState.node);
     const params = parseLayerName(editState.node.name);
     if (params) {
-      figma.ui.postMessage({ type: 'update-ui-controls', params });
+      figma.ui.postMessage({ type: 'update-ui-controls', params, isSelected: true });
       captureAndSend(editState.node, params);
     }
   } else {
