@@ -47,7 +47,7 @@
     }
     
     #placeholder {
-      color: var(--text-secondary-color);
+      color: var(--text-secondary-color);      
     }
 
     #lg-canvas {
@@ -111,8 +111,7 @@
       background: var(--primary-color);
       cursor: pointer;
       border-radius: 50%;
-      border: 2px solid var(--bg-color);
-      margin-top: -5px; /* Vertically center thumb on track */
+      border: 2px solid var(--bg-color);      
       transition: background-color 0.2s ease;
     }
 
@@ -193,7 +192,11 @@
 </head>
 <body>
   <div id="output-area">
-    <em id="placeholder">Select or create a Liquid Glass element.</em>
+    <em id="placeholder">      
+        Select or create a Liquid Glass element.
+        <br><br>
+        Plugin needs to be kept open to update the effect.      
+    </em>
     <canvas id="lg-canvas" width="1" height="1" style="display:none"></canvas>
   </div>
 
@@ -464,7 +467,11 @@
         if (!placeholder) {
           const newPlaceholder = document.createElement('em');
           newPlaceholder.id = 'placeholder';
-          newPlaceholder.textContent = 'Select or create a Liquid Glass element.';
+          newPlaceholder.innerHTML = `      
+            Select or create a Liquid Glass element.
+            <br><br>
+            Plugin needs to be kept open to update the effect.      
+          `;
           document.getElementById('output-area').prepend(newPlaceholder);
         }
         return;
