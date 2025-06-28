@@ -351,7 +351,7 @@
 
     /* sliders update their value display and trigger real-time updates */
     const sliders = document.querySelectorAll('input[type="range"]');
-    let isSelected = false;
+    const createBtn = document.getElementById('create-btn');
 
     function updateValueDisplay(slider) {
       const output = document.getElementById(slider.id + '-value');
@@ -359,14 +359,15 @@
     }
 
     function handleSliderChange() {
-      if (!isSelected) return;
-      const params = {
-        edge: +document.getElementById('edge').value,
-        strength: +document.getElementById('strength').value,
-        ca: +document.getElementById('ca').value,
-        frost: +document.getElementById('frost').value,
-      };
-      send('update-lg-element', { params });
+      if (createBtn.disabled) { // Only send update if an element is selected
+        const params = {
+          edge: +document.getElementById('edge').value,
+          strength: +document.getElementById('strength').value,
+          ca: +document.getElementById('ca').value,
+          frost: +document.getElementById('frost').value,
+        };
+        send('update-lg-element', { params });
+      }
     }
 
     sliders.forEach(slider => {
@@ -396,12 +397,17 @@
       if (!msg) return;
 
       if (msg.type === 'update-ui-controls') {
-        isSelected = true;
+        createBtn.disabled = msg.isSelected;
         document.getElementById('edge').value = msg.params.edge;
         document.getElementById('strength').value = msg.params.strength;
         document.getElementById('ca').value = msg.params.ca;
         document.getElementById('frost').value = msg.params.frost;
         sliders.forEach(updateValueDisplay);
+        return;
+      }
+
+      if (msg.type === 'selection-cleared') {
+        createBtn.disabled = false;
         return;
       }
 

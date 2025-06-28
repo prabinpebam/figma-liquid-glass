@@ -17,10 +17,6 @@ function boundsEqual(a: typeof editState.lastBounds, b: typeof editState.lastBou
   return a && b && a.x === b.x && a.y === b.y && a.width === b.width && a.height === b.height;
 }
 
-function rectsIntersect(a: { x: number; y: number; width: number; height: number }, b: { x: number; y: number; width: number; height: number }) {
-  return !(a.x > b.x + b.width || a.x + a.width < b.x || a.y > b.y + b.height || a.y + a.height < b.y);
-}
-
 function parseLayerName(name: string): { [key: string]: number } | null {
   if (!name.startsWith('[LG - ') || !name.endsWith(']')) return null;
   const paramsStr = name.substring(6, name.length - 1);
@@ -52,7 +48,8 @@ async function createLgElement(params: any) {
   const mainFrame = figma.createFrame();
   mainFrame.name = formatLayerName(params);
   mainFrame.resize(150, 50);
-  mainFrame.clipsContent = false;
+  mainFrame.cornerRadius = 10;
+  mainFrame.clipsContent = true;
   mainFrame.x = figma.viewport.center.x - 75;
   mainFrame.y = figma.viewport.center.y - 25;
 
@@ -60,6 +57,7 @@ async function createLgElement(params: any) {
   refractionLayer.name = "Refraction layer";
   refractionLayer.constraints = { horizontal: 'SCALE', vertical: 'SCALE' };
   refractionLayer.resize(150, 50);
+  refractionLayer.cornerRadius = 10;
   mainFrame.appendChild(refractionLayer);
 
   const tintLayer = figma.createRectangle();
@@ -87,7 +85,7 @@ async function createLgElement(params: any) {
   const highlightReflection = figma.createRectangle();
   highlightReflection.name = "Highlight reflection";
   highlightReflection.constraints = { horizontal: 'SCALE', vertical: 'SCALE' };
-  highlightReflection.effects = [{ type: 'LAYER_BLUR', blurType: 'NORMAL', radius: 9, visible: true }];
+  highlightReflection.effects = [{ type: 'LAYER_BLUR', blurType: 'NORMAL', radius: 14, visible: true }];
   highlightReflection.fills = [];
   highlightReflection.resize(150, 50);
   highlightFrame.appendChild(highlightReflection);
@@ -99,6 +97,8 @@ async function createLgElement(params: any) {
 async function updateLgElement(node: FrameNode, params: any, context: 'create' | 'update') {
   const refractionLayer = node.findOne(n => n.name === 'Refraction layer') as RectangleNode;
   if (!refractionLayer) return;
+
+  refractionLayer.cornerRadius = node.cornerRadius;
 
   if (context === 'create') {
     refractionLayer.strokeWeight = 1;
@@ -115,14 +115,14 @@ async function updateLgElement(node: FrameNode, params: any, context: 'create' |
       ],
     }];
     refractionLayer.effects = [
-      { type: 'DROP_SHADOW', color: { r: 0, g: 0, b: 0, a: 0.25 }, offset: { x: 0, y: 6 }, radius: 5, visible: true, blendMode: 'NORMAL' },
-      { type: 'INNER_SHADOW', color: { r: 0, g: 0, b: 0, a: 0.4 }, offset: { x: 10, y: 10 }, radius: 10, visible: true, blendMode: 'NORMAL' },
+      { type: 'DROP_SHADOW', color: { r: 0, g: 0, b: 0, a: 0.25 }, offset: { x: 0, y: 6 }, radius: 5, spread: 0, visible: true, blendMode: 'NORMAL' },
+      { type: 'INNER_SHADOW', color: { r: 0, g: 0, b: 0, a: 0.4 }, offset: { x: 10, y: 10 }, radius: 10, spread: 0, visible: true, blendMode: 'NORMAL' },
     ];
     const highlightReflection = node.findOne(n => n.name === 'Highlight reflection') as RectangleNode;
     if (highlightReflection) {
       highlightReflection.strokes = JSON.parse(JSON.stringify(refractionLayer.strokes));
-      highlightReflection.strokeWeight = 3;
-      highlightReflection.effects = [{ type: 'LAYER_BLUR', blurType: 'NORMAL', radius: 9, visible: true }];
+      highlightReflection.strokeWeight = 12;
+      highlightReflection.strokeAlign = 'CENTER';
     }
   }
 
@@ -132,43 +132,32 @@ async function updateLgElement(node: FrameNode, params: any, context: 'create' |
 
 async function captureAndSend(target: FrameNode, params: any) {
   const { width, height } = target;
-  const absX = target.absoluteTransform[0][2];
-  const absY = target.absoluteTransform[1][2];
-  const captureRect = { x: absX - OFFSET, y: absY - OFFSET, width: width + OFFSET * 2, height: height + OFFSET * 2 };
+  const captureRect = { x: target.absoluteTransform[0][2] - OFFSET, y: target.absoluteTransform[1][2] - OFFSET, width: width + OFFSET * 2, height: height + OFFSET * 2 };
 
-  const nodesToRestore: { node: SceneNode; visible: boolean }[] = [];
-  function hide(node: SceneNode) {
-    nodesToRestore.push({ node, visible: node.visible });
-    node.visible = false;
-  }
-
-  const parent = target.parent;
-  const siblings = parent ? parent.children : [];
-  let foundTarget = false;
-  for (const n of siblings) {
-    if (n === target) {
-      foundTarget = true;
-      hide(n);
-      continue;
-    }
-    if (!foundTarget) continue;
-    if (!n.visible) continue;
-    const b = nodeBounds(n);
-    if (rectsIntersect(b, captureRect)) hide(n);
-  }
+  const nodesToRestore: { node: SceneNode, visible: boolean }[] = [];
+  
+  // Hide the target node itself to capture what's behind it
+  nodesToRestore.push({ node: target, visible: target.visible });
+  target.visible = false;
 
   const slice = figma.createSlice();
   slice.x = captureRect.x;
   slice.y = captureRect.y;
-  slice.resizeWithoutConstraints(captureRect.width, captureRect.height);
-  const bytes = await slice.exportAsync({ format: 'PNG' });
+  slice.resize(captureRect.width, captureRect.height);
+  figma.currentPage.appendChild(slice);
+
+  const bytes = await slice.exportAsync({
+    format: 'PNG',
+  });
+
   slice.remove();
 
+  // Restore visibility of all hidden nodes
   for (const { node, visible } of nodesToRestore) {
     node.visible = visible;
   }
 
-  const shapeProps = { width, height, cornerRadius: target.cornerRadius || 0 };
+  const shapeProps = { width, height, cornerRadius: typeof target.cornerRadius === 'number' ? target.cornerRadius : 0 };
   figma.ui.postMessage({ type: 'image-captured', data: `data:image/png;base64,${figma.base64Encode(bytes)}`, shape: shapeProps, params });
   editState.lastBounds = nodeBounds(target);
 }
@@ -181,10 +170,12 @@ function onSelectionChange() {
     const params = parseLayerName(editState.node.name);
     if (params) {
       figma.ui.postMessage({ type: 'update-ui-controls', params });
+      captureAndSend(editState.node, params);
     }
   } else {
     editState.node = null;
     editState.lastBounds = null;
+    figma.ui.postMessage({ type: 'selection-cleared' });
   }
 }
 
@@ -198,8 +189,6 @@ function onDocumentChange() {
   }
 }
 
-figma.on('selectionchange', onSelectionChange);
-
 figma.ui.onmessage = async (msg) => {
   if (msg.type === 'create-lg-element') {
     await createLgElement(msg.params);
@@ -211,7 +200,9 @@ figma.ui.onmessage = async (msg) => {
     if (editState.node) {
       const refractionLayer = editState.node.findOne(n => n.name === 'Refraction layer') as RectangleNode;
       if (refractionLayer) {
-        const image = figma.createImage(figma.base64Decode(msg.data.split(',')[1]));
+        const base64 = msg.data.split(',')[1];
+        const bytes = figma.base64Decode(base64);
+        const image = figma.createImage(bytes);
         refractionLayer.fills = [{ type: 'IMAGE', imageHash: image.hash, scaleMode: 'FILL' }];
       }
     }
@@ -221,4 +212,5 @@ figma.ui.onmessage = async (msg) => {
 (async () => {
   await figma.loadAllPagesAsync();
   figma.on('documentchange', onDocumentChange);
+  figma.on('selectionchange', onSelectionChange);
 })();

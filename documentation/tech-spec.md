@@ -3,7 +3,7 @@
 ## Construction
 The Liquid glass element is constructed in the following manner.
 
-THe name of the Liquid glass element frame layer should be constrcuted in the following manner
+The name of the Liquid glass element frame layer should be constrcuted in the following manner
 [LG - ET10 RS25 CA5 BB1.0]
 LG = Liquid glass
 ET10 = Edge thickness: 10
