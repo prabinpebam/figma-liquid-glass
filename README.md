@@ -1,4 +1,4 @@
-# <img src="./assets/icon.png" width="48" align="center"> Liquid Glass Figma Plugin
+# <img src="assets/liquid-glass-logo.png" width="48" align="center"> Liquid Glass Figma Plugin
 
 ![Liquid Glass Plugin Banner](assets/liquid-glass-banner.png)
 
