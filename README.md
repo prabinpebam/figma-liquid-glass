@@ -41,13 +41,14 @@
   - Refraction strength control (1-100)
   - Chromatic aberration (0-30)
   - Background blur/frostiness (0-20)
+- **Batch Update**: Refresh all Liquid Glass elements on the current page with a single click.
 
 ### Workflow
-The plugin operates in two main modes: creating a new element and editing an existing one.
+The plugin operates in three main modes: creating, editing, and batch updating.
 
 1. **Create Mode**
    - With no Liquid Glass element selected, adjust the parameters in the plugin UI.
-   - Click "Create Liquid Glass" to generate a new, fully-styled component in the center of your viewport.
+   - Click "Create" to generate a new, fully-styled component in the center of your viewport.
    - The new element is automatically selected, switching the plugin to Edit Mode.
 
 2. **Edit Mode (Live Updates)**
@@ -55,15 +56,21 @@ The plugin operates in two main modes: creating a new element and editing an exi
    - Any change to the sliders will update the selected element's appearance in real-time.
    - Moving, resizing, or changing the corner radius of the element on the Figma canvas will also trigger an automatic refresh of the background effect.
 
+3. **Batch Update Mode**
+   - Click the "Update All" button to refresh every Liquid Glass element on the current page.
+   - The plugin will cycle through each element, bring it into view to capture the background, and apply the updated effect.
+   - The process can be interrupted by interacting with the Figma canvas.
+
 ### Applied Figma Styling
 When creating a Liquid Glass element, the plugin applies a specific style structure:
-- **Main Frame**: `cornerRadius` can be adjusted.
+- **Main Frame**: 
+  - `cornerRadius` can be adjusted (defaults to 50px).
+  - **Drop shadow**: offset (3, 6), blur 10, opacity 25%.
 - **Refraction Layer**:
   - **Angular gradient border**: 1px thickness with white highlights.
   - **Inner shadow**: offset (10, 10), blur 10, opacity 40%.
-  - **Drop shadow**: offset (0, 6), blur 5, opacity 25%.
 - **Highlight Layer**:
-  - A blurred reflection effect using a thick, centered angular gradient stroke.
+  - A blurred reflection effect using a thick (8px), centered angular gradient stroke and a layer blur of 24px.
 
 ## Development
 
@@ -96,13 +103,16 @@ liquid-glass/
 ### Creating an Element
 1. **Open the Liquid Glass plugin**.
 2. **Adjust parameters** using the sliders to your preference.
-3. **Click "Create Liquid Glass"**. A new element will appear on your canvas.
+3. **Click "Create"**. A new element will appear on your canvas.
 
 ### Editing an Element
 1. **Select a Liquid Glass element** on the Figma canvas.
 2. The plugin UI will automatically update to show its current settings.
 3. **Adjust sliders** in the plugin to see the effect change in real-time.
 4. **Move, resize, or change the corner radius** of the main frame directly on the canvas. The effect will automatically update.
+
+### Batch Updating
+- **Click "Update All"** in the plugin panel to refresh every Liquid Glass element on the page. This is useful after making significant changes to the background content.
 
 ### Layer Naming Convention
 Applied effects use this naming format:
