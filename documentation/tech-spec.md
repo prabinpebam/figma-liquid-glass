@@ -43,6 +43,7 @@ The parameter in the following JSON represents native Figma parameters.
                     "layer type": "rectangle",
                     "height": "100% of parent",
                     "width": "100% of parent",
+                    "corner radius": "10px",
                     "stroke": [
                         {
                             "Position": "Center",
@@ -204,7 +205,7 @@ The parameter in the following JSON represents native Figma parameters.
 # Update of LG element by selection
 LG element are meant to be dragged and resized as a whole at the LG element level which has the name in the format "[LG - ET10 RS25 CA5 BB1.0]"
 - Selecting an LG element that's already in Figma, as qualified by the name, disables the "Create Liquid Glass" button as that fucntionality is not applicable. Instead the sliders update to display the value of the selected LG element.
-- Change in position and size of LG element layer will update strictly only and only the "Refraction layer" background image through the plugin. No other Figma parameter will be changed.
+- Change in corner radius, position and size of LG element layer will update strictly only and only the "Refraction layer" background image through the plugin. No other Figma parameter will be changed.
     - The corner radius of the LG element is taken from the Corner radius of parent LG element with the name "[LG - ET10 RS25 CA5 BB1.0]"
-    - Every time the LG element is updated as a whole, the corner radius of the "Refraction layer" should be made exactly the same as the LG element parent layer.
+    - Every time the LG element is updated as a whole, the corner radius of the "Refraction layer" and "Highlight layer" should be made exactly the same as the LG element parent layer.
 - Changing the value of the slider will immediately update the image of the "Refraction layer" in realtime as per the parameter and update the LG element layer name to reflect the new parameters. 

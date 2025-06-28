@@ -5,16 +5,17 @@ const OFFSET = 20;
 
 const editState = {
   node: null as FrameNode | null,
-  lastBounds: null as { x: number; y: number; width: number; height: number } | null,
+  lastBounds: null as { x: number; y: number; width: number; height: number; cornerRadius: number | typeof figma.mixed; } | null,
 };
 
-function nodeBounds(node: SceneNode) {
+function nodeBounds(node: SceneNode): { x: number; y: number; width: number; height: number; cornerRadius: number | typeof figma.mixed; } {
   const t = node.absoluteTransform;
-  return { x: t[0][2], y: t[1][2], width: (node as any).width, height: (node as any).height };
+  const cornerRadius = 'cornerRadius' in node ? (node as FrameNode | RectangleNode).cornerRadius : 0;
+  return { x: t[0][2], y: t[1][2], width: (node as any).width, height: (node as any).height, cornerRadius };
 }
 
 function boundsEqual(a: typeof editState.lastBounds, b: typeof editState.lastBounds) {
-  return a && b && a.x === b.x && a.y === b.y && a.width === b.width && a.height === b.height;
+  return a && b && a.x === b.x && a.y === b.y && a.width === b.width && a.height === b.height && a.cornerRadius === b.cornerRadius;
 }
 
 function parseLayerName(name: string): { [key: string]: number } | null {
@@ -88,6 +89,7 @@ async function createLgElement(params: any) {
   highlightReflection.effects = [{ type: 'LAYER_BLUR', blurType: 'NORMAL', radius: 14, visible: true }];
   highlightReflection.fills = [];
   highlightReflection.resize(150, 50);
+  highlightReflection.cornerRadius = 10;
   highlightFrame.appendChild(highlightReflection);
 
   figma.currentPage.selection = [mainFrame];
@@ -98,7 +100,16 @@ async function updateLgElement(node: FrameNode, params: any, context: 'create' |
   const refractionLayer = node.findOne(n => n.name === 'Refraction layer') as RectangleNode;
   if (!refractionLayer) return;
 
-  refractionLayer.cornerRadius = node.cornerRadius;
+  const cornerRadius = typeof node.cornerRadius === 'number' ? node.cornerRadius : 0;
+  refractionLayer.cornerRadius = cornerRadius;
+  const highlightFrame = node.findOne(n => n.name === 'Highlight layer') as FrameNode | null;
+  if (highlightFrame) {
+    highlightFrame.cornerRadius = cornerRadius;
+    const highlightReflection = highlightFrame.findOne(n => n.name === 'Highlight reflection' && 'cornerRadius' in n) as RectangleNode | null;
+    if (highlightReflection) {
+      highlightReflection.cornerRadius = cornerRadius;
+    }
+  }
 
   if (context === 'create') {
     refractionLayer.strokeWeight = 1;
@@ -118,7 +129,7 @@ async function updateLgElement(node: FrameNode, params: any, context: 'create' |
       { type: 'DROP_SHADOW', color: { r: 0, g: 0, b: 0, a: 0.25 }, offset: { x: 0, y: 6 }, radius: 5, spread: 0, visible: true, blendMode: 'NORMAL' },
       { type: 'INNER_SHADOW', color: { r: 0, g: 0, b: 0, a: 0.4 }, offset: { x: 10, y: 10 }, radius: 10, spread: 0, visible: true, blendMode: 'NORMAL' },
     ];
-    const highlightReflection = node.findOne(n => n.name === 'Highlight reflection') as RectangleNode;
+    const highlightReflection = node.findOne(n => n.name === 'Highlight reflection') as RectangleNode | null;
     if (highlightReflection) {
       highlightReflection.strokes = JSON.parse(JSON.stringify(refractionLayer.strokes));
       highlightReflection.strokeWeight = 12;
@@ -183,6 +194,25 @@ function onDocumentChange() {
   if (!editState.node) return;
   const now = nodeBounds(editState.node);
   if (boundsEqual(now, editState.lastBounds)) return;
+
+  // Propagate corner radius changes to children
+  const node = editState.node;
+  if (typeof node.cornerRadius === 'number') {
+    const cornerRadius = node.cornerRadius;
+    const refractionLayer = node.findOne(n => n.name === 'Refraction layer' && 'cornerRadius' in n) as RectangleNode | null;
+    if (refractionLayer) {
+      refractionLayer.cornerRadius = cornerRadius;
+    }
+    const highlightFrame = node.findOne(n => n.name === 'Highlight layer' && 'cornerRadius' in n) as FrameNode | null;
+    if (highlightFrame) {
+      highlightFrame.cornerRadius = cornerRadius;
+      const highlightReflection = highlightFrame.findOne(n => n.name === 'Highlight reflection' && 'cornerRadius' in n) as RectangleNode | null;
+      if (highlightReflection) {
+        highlightReflection.cornerRadius = cornerRadius;
+      }
+    }
+  }
+
   const params = parseLayerName(editState.node.name);
   if (params) {
     captureAndSend(editState.node, params);
