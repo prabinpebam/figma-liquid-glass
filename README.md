@@ -1,7 +1,7 @@
 # Liquid Glass Figma Plugin
 
 ## Overview
-"Liquid Glass" is a Figma plugin that creates realistic liquid glass effects using WebGL shaders. The plugin captures the background beneath selected shapes and applies advanced visual effects including refraction distortion, chromatic aberration, and background blur to simulate the appearance of liquid glass.
+"Liquid Glass" is a Figma plugin that creates and manages realistic liquid glass components using WebGL shaders. The plugin generates a pre-structured, multi-layer frame that captures the background beneath it and applies advanced visual effects like refraction, chromatic aberration, and blur to simulate a liquid glass appearance.
 
 ## Getting Started
 
@@ -29,35 +29,41 @@
    ```
 2. Open Figma and navigate to the Plugins menu.
 3. Select "Development" and then "Import plugin from manifest...".
-4. Select the `manifest.json` file from the `liquid-glass` directory.
+4. Select the `manifest.json` file from the `dist/` directory.
 5. You can now run the plugin from the Plugins menu in Figma.
 
 ## Features
 
 ### Liquid Glass Effect
-- **Real-time background capture** of content beneath selected shapes
+- **Real-time background capture** of content beneath the element.
 - **WebGL-powered rendering** with advanced shader effects:
   - Edge distortion with customizable thickness (1-50px)
   - Refraction strength control (1-100)
   - Chromatic aberration (0-30)
   - Background blur/frostiness (0-20)
 
-### Dual Trigger System
-1. **Manual Application**
-   - Select a shape, adjust parameters, and click "Apply"
-   - Applies complete Figma styling (borders, shadows, effects)
-   - Layer is renamed with effect parameters: `[LG - ET20 RS25 CA5 BB0]`
+### Workflow
+The plugin operates in two main modes: creating a new element and editing an existing one.
 
-2. **Automatic Updates**
-   - Shapes with active Liquid Glass effect automatically update when moved or resized
-   - Effect parameters are parsed from the layer name
-   - Only updates the background image, preserves all other Figma properties
+1. **Create Mode**
+   - With no Liquid Glass element selected, adjust the parameters in the plugin UI.
+   - Click "Create Liquid Glass" to generate a new, fully-styled component in the center of your viewport.
+   - The new element is automatically selected, switching the plugin to Edit Mode.
+
+2. **Edit Mode (Live Updates)**
+   - When a Liquid Glass element is selected, the plugin UI automatically loads its parameters into the sliders.
+   - Any change to the sliders will update the selected element's appearance in real-time.
+   - Moving, resizing, or changing the corner radius of the element on the Figma canvas will also trigger an automatic refresh of the background effect.
 
 ### Applied Figma Styling
-When manually applying Liquid Glass effect, the plugin adds:
-- **Angular gradient border** (2px thickness with white highlights)
-- **Inner shadow** (offset: 12,12 | blur: 30 | opacity: 70%)
-- **Drop shadow** (offset: 0,6 | blur: 5 | opacity: 25%)
+When creating a Liquid Glass element, the plugin applies a specific style structure:
+- **Main Frame**: `cornerRadius` can be adjusted.
+- **Refraction Layer**:
+  - **Angular gradient border**: 1px thickness with white highlights.
+  - **Inner shadow**: offset (10, 10), blur 10, opacity 40%.
+  - **Drop shadow**: offset (0, 6), blur 5, opacity 25%.
+- **Highlight Layer**:
+  - A blurred reflection effect using a thick, centered angular gradient stroke.
 
 ## Development
 
@@ -77,9 +83,9 @@ npm run type-check
 ```
 liquid-glass/
 ├── src/
-│   ├── code.ts           # Main plugin logic
+│   ├── code.ts           # Main plugin logic (TypeScript)
 │   └── ui/
-│       └── index.html    # Plugin UI with embedded WebGL shaders
+│       └── index.html    # Self-contained UI (HTML, CSS, JS, WebGL Shaders)
 ├── dist/                 # Compiled output
 ├── manifest.json         # Figma plugin manifest
 └── package.json
@@ -87,20 +93,16 @@ liquid-glass/
 
 ## Usage
 
-### Basic Workflow
-1. **Select a shape** in Figma (rectangle, frame, etc.)
-2. **Open the Liquid Glass plugin**
-3. **Adjust parameters** using the sliders:
-   - Edge thickness: Controls the width of the distortion effect
-   - Refraction strength: Intensity of the glass distortion
-   - Chromatic aberration: Color fringing effect at edges
-   - Background blur: Frosting/blur effect on the background
-4. **Click "Apply"** to apply the effect with full Figma styling
+### Creating an Element
+1. **Open the Liquid Glass plugin**.
+2. **Adjust parameters** using the sliders to your preference.
+3. **Click "Create Liquid Glass"**. A new element will appear on your canvas.
 
-### Automatic Updates
-- Shapes with applied Liquid Glass effect (identifiable by layer names like `[LG - ET20 RS25 CA5 BB0]`) will automatically update their background when moved or resized
-- The effect parameters are preserved from the original application
-- No need to manually reapply unless you want to change the effect parameters
+### Editing an Element
+1. **Select a Liquid Glass element** on the Figma canvas.
+2. The plugin UI will automatically update to show its current settings.
+3. **Adjust sliders** in the plugin to see the effect change in real-time.
+4. **Move, resize, or change the corner radius** of the main frame directly on the canvas. The effect will automatically update.
 
 ### Layer Naming Convention
 Applied effects use this naming format:
@@ -115,22 +117,22 @@ Applied effects use this naming format:
 
 ### WebGL Shaders
 The plugin uses custom WebGL fragment shaders to achieve:
-- **Signed Distance Functions (SDF)** for precise shape calculations
-- **Multi-sample blur** for frosting effects
-- **Chromatic aberration** with separate RGB channel distortion
-- **Real-time refraction** based on distance from shape edges
+- **Signed Distance Functions (SDF)** for precise shape calculations.
+- **Multi-sample blur** for frosting effects.
+- **Chromatic aberration** with separate RGB channel distortion.
+- **Real-time refraction** based on distance from shape edges.
 
 ### Performance
-- **Automatic mode** provides real-time updates as you move/resize shapes
-- **Optimized rendering** with efficient WebGL texture handling
-- **Smart caching** to avoid unnecessary recalculations
+- **Live editing mode** provides real-time updates as you move, resize, or adjust sliders.
+- **Optimized rendering** with efficient WebGL texture handling.
+- **Smart caching** of element bounds to avoid unnecessary recalculations.
 
 ## Browser Compatibility
 - Requires WebGL support (available in all modern browsers)
-- Tested on Chrome, Firefox, Safari, and Figma desktop app
+- Tested on Chrome, Firefox, Safari, and Figma desktop app.
 
 ## Contributing
 If you would like to contribute to the project, please fork the repository and submit a pull request with your changes.
 
 ## License
-This project is licensed under the MIT License. See the LICENSE file for details.
+This project is licensed under the MIT License. Authored by Prabin Pebam.

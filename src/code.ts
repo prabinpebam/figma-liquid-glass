@@ -48,31 +48,31 @@ function formatLayerName(params: { [key: string]: any }): string {
 async function createLgElement(params: any) {
   const mainFrame = figma.createFrame();
   mainFrame.name = formatLayerName(params);
-  mainFrame.resize(150, 50);
-  mainFrame.cornerRadius = 10;
+  mainFrame.resize(200, 100);
+  mainFrame.cornerRadius = 50;
   mainFrame.clipsContent = true;
-  mainFrame.x = figma.viewport.center.x - 75;
-  mainFrame.y = figma.viewport.center.y - 25;
+  mainFrame.x = figma.viewport.center.x - 100;
+  mainFrame.y = figma.viewport.center.y - 50;
 
   const refractionLayer = figma.createRectangle();
   refractionLayer.name = "Refraction layer";
   refractionLayer.constraints = { horizontal: 'SCALE', vertical: 'SCALE' };
-  refractionLayer.resize(150, 50);
-  refractionLayer.cornerRadius = 10;
+  refractionLayer.resize(200, 100);
+  refractionLayer.cornerRadius = 50;
   mainFrame.appendChild(refractionLayer);
 
   const tintLayer = figma.createRectangle();
   tintLayer.name = "Tint layer";
   tintLayer.constraints = { horizontal: 'SCALE', vertical: 'SCALE' };
   tintLayer.fills = [{ type: 'SOLID', color: { r: 1, g: 1, b: 1 }, opacity: 0.2 }];
-  tintLayer.resize(150, 50);
+  tintLayer.resize(200, 100);
   mainFrame.appendChild(tintLayer);
 
   const contentFrame = figma.createFrame();
   contentFrame.name = "Content";
   contentFrame.constraints = { horizontal: 'SCALE', vertical: 'SCALE' };
   contentFrame.fills = [];
-  contentFrame.resize(150, 50);
+  contentFrame.resize(200, 100);
   mainFrame.appendChild(contentFrame);
 
   const highlightFrame = figma.createFrame();
@@ -80,16 +80,16 @@ async function createLgElement(params: any) {
   highlightFrame.constraints = { horizontal: 'SCALE', vertical: 'SCALE' };
   highlightFrame.clipsContent = true;
   highlightFrame.fills = [];
-  highlightFrame.resize(150, 50);
+  highlightFrame.resize(200, 100);
   mainFrame.appendChild(highlightFrame);
 
   const highlightReflection = figma.createRectangle();
   highlightReflection.name = "Highlight reflection";
   highlightReflection.constraints = { horizontal: 'SCALE', vertical: 'SCALE' };
-  highlightReflection.effects = [{ type: 'LAYER_BLUR', blurType: 'NORMAL', radius: 14, visible: true }];
+  highlightReflection.effects = [{ type: 'LAYER_BLUR', blurType: 'NORMAL', radius: 24, visible: true }];
   highlightReflection.fills = [];
-  highlightReflection.resize(150, 50);
-  highlightReflection.cornerRadius = 10;
+  highlightReflection.resize(200, 100);
+  highlightReflection.cornerRadius = 50;
   highlightFrame.appendChild(highlightReflection);
 
   figma.currentPage.selection = [mainFrame];
@@ -112,6 +112,10 @@ async function updateLgElement(node: FrameNode, params: any, context: 'create' |
   }
 
   if (context === 'create') {
+    node.effects = [
+      { type: 'DROP_SHADOW', color: { r: 0, g: 0, b: 0, a: 0.25 }, offset: { x: 3, y: 6 }, radius: 10, spread: 0, visible: true, blendMode: 'NORMAL' }
+    ];
+
     refractionLayer.strokeWeight = 1;
     refractionLayer.strokes = [{
       type: 'GRADIENT_ANGULAR',
@@ -126,13 +130,23 @@ async function updateLgElement(node: FrameNode, params: any, context: 'create' |
       ],
     }];
     refractionLayer.effects = [
-      { type: 'DROP_SHADOW', color: { r: 0, g: 0, b: 0, a: 0.25 }, offset: { x: 0, y: 6 }, radius: 5, spread: 0, visible: true, blendMode: 'NORMAL' },
       { type: 'INNER_SHADOW', color: { r: 0, g: 0, b: 0, a: 0.4 }, offset: { x: 10, y: 10 }, radius: 10, spread: 0, visible: true, blendMode: 'NORMAL' },
     ];
     const highlightReflection = node.findOne(n => n.name === 'Highlight reflection') as RectangleNode | null;
     if (highlightReflection) {
-      highlightReflection.strokes = JSON.parse(JSON.stringify(refractionLayer.strokes));
-      highlightReflection.strokeWeight = 12;
+      highlightReflection.strokes = [{
+        type: 'GRADIENT_ANGULAR',
+        gradientTransform: [[1, 0, 0], [0, 1, 0]],
+        gradientStops: [
+          { position: 0.12, color: { r: 1, g: 1, b: 1, a: 1.0 } },
+          { position: 0.28, color: { r: 1, g: 1, b: 1, a: 0.0 } },
+          { position: 0.36, color: { r: 1, g: 1, b: 1, a: 0.0 } },
+          { position: 0.64, color: { r: 1, g: 1, b: 1, a: 1.0 } },
+          { position: 0.78, color: { r: 1, g: 1, b: 1, a: 0.0 } },
+          { position: 0.89, color: { r: 1, g: 1, b: 1, a: 0.0 } },
+        ],
+      }];
+      highlightReflection.strokeWeight = 8;
       highlightReflection.strokeAlign = 'CENTER';
     }
   }
@@ -141,7 +155,7 @@ async function updateLgElement(node: FrameNode, params: any, context: 'create' |
   await captureAndSend(node, params);
 }
 
-async function captureAndSend(target: FrameNode, params: any) {
+async function captureAndSend(target: FrameNode, params: any, nodeId: string = target.id) {
   const { width, height } = target;
   const captureRect = { x: target.absoluteTransform[0][2] - OFFSET, y: target.absoluteTransform[1][2] - OFFSET, width: width + OFFSET * 2, height: height + OFFSET * 2 };
 
@@ -169,8 +183,10 @@ async function captureAndSend(target: FrameNode, params: any) {
   }
 
   const shapeProps = { width, height, cornerRadius: typeof target.cornerRadius === 'number' ? target.cornerRadius : 0 };
-  figma.ui.postMessage({ type: 'image-captured', data: `data:image/png;base64,${figma.base64Encode(bytes)}`, shape: shapeProps, params });
-  editState.lastBounds = nodeBounds(target);
+  figma.ui.postMessage({ type: 'image-captured', data: `data:image/png;base64,${figma.base64Encode(bytes)}`, shape: shapeProps, params, nodeId });
+  if (editState.node && editState.node.id === target.id) {
+    editState.lastBounds = nodeBounds(target);
+  }
 }
 
 function onSelectionChange() {
@@ -219,6 +235,9 @@ function onDocumentChange() {
   }
 }
 
+let isUpdatingAll = false;
+let scriptIsMakingChange = false;
+
 figma.ui.onmessage = async (msg) => {
   if (msg.type === 'create-lg-element') {
     await createLgElement(msg.params);
@@ -227,8 +246,9 @@ figma.ui.onmessage = async (msg) => {
       await updateLgElement(editState.node, msg.params, 'update');
     }
   } else if (msg.type === 'apply-image-fill') {
-    if (editState.node) {
-      const refractionLayer = editState.node.findOne(n => n.name === 'Refraction layer') as RectangleNode;
+    const nodeToFill = await figma.getNodeByIdAsync(msg.nodeId) as FrameNode;
+    if (nodeToFill) {
+      const refractionLayer = nodeToFill.findOne(n => n.name === 'Refraction layer') as RectangleNode;
       if (refractionLayer) {
         const base64 = msg.data.split(',')[1];
         const bytes = figma.base64Decode(base64);
@@ -236,11 +256,62 @@ figma.ui.onmessage = async (msg) => {
         refractionLayer.fills = [{ type: 'IMAGE', imageHash: image.hash, scaleMode: 'FILL' }];
       }
     }
+  } else if (msg.type === 'update-all-lg-elements') {
+    if (isUpdatingAll) return;
+    isUpdatingAll = true;
+    scriptIsMakingChange = true;
+
+    const originalViewport = { center: figma.viewport.center, zoom: figma.viewport.zoom };
+    const lgNodes = figma.currentPage.findAll(n => n.type === 'FRAME' && !!parseLayerName(n.name)) as FrameNode[];
+    
+    if (lgNodes.length === 0) {
+      figma.notify("No Liquid Glass elements found on this page.");
+      isUpdatingAll = false;
+      return;
+    }
+
+    let notification = figma.notify(`Updating ${lgNodes.length} element(s)...`);
+
+    try {
+      for (let i = 0; i < lgNodes.length; i++) {
+        if (!isUpdatingAll) {
+          throw new Error("Update process was interrupted by the user.");
+        }
+        const node = lgNodes[i];
+        notification.cancel();
+        notification = figma.notify(`Updating ${i + 1} of ${lgNodes.length}: ${node.name}`);
+        
+        const params = parseLayerName(node.name);
+        if (params) {
+          figma.viewport.scrollAndZoomIntoView([node]);
+          await captureAndSend(node, params, node.id);
+          await new Promise(resolve => setTimeout(resolve, 100)); // Small delay for UI to process
+        }
+      }
+      notification.cancel();
+      figma.notify(`Successfully updated ${lgNodes.length} element(s).`);
+    } catch (e) {
+      notification.cancel();
+      const message = e instanceof Error ? e.message : String(e);
+      figma.notify(`Update stopped: ${message}`, { error: true });
+    } finally {
+      figma.viewport.center = originalViewport.center;
+      figma.viewport.zoom = originalViewport.zoom;
+      isUpdatingAll = false;
+      scriptIsMakingChange = false;
+    }
   }
 };
 
 (async () => {
   await figma.loadAllPagesAsync();
-  figma.on('documentchange', onDocumentChange);
+  figma.on('documentchange', () => {
+    if (scriptIsMakingChange) return; // Ignore changes made by the script itself
+
+    if (isUpdatingAll) {
+      isUpdatingAll = false; // Interrupt batch update if user makes a change
+    }
+    onDocumentChange();
+  });
   figma.on('selectionchange', onSelectionChange);
 })();

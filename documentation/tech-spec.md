@@ -20,9 +20,29 @@ The parameter in the following JSON represents native Figma parameters.
     "layer name": "[LG - ET11 RS29 CA5 BB0]",
     "layer type": "frame",
     "clip content": true,
-    "height": "50px",
-    "width": "150px",
-    "corner radius": "10px",
+    "height": "100px",
+    "width": "200px",
+    "corner radius": "50px",
+    "effects": [
+        {
+            "Effect type": "Drop shadow",
+            "Position": [
+                {
+                    "x": 0,
+                    "y": 6
+                }
+            ],
+            "Blur": 5,
+            "Spread": 0,
+            "Color": [
+                {
+                    "Value": "#000000",
+                    "Opacity": "25%"
+        
+                }
+            ]
+        },
+    ],
     "children": [
         {
             "layer name": "Highlight layer",
@@ -156,25 +176,7 @@ The parameter in the following JSON represents native Figma parameters.
                     ]
                 }
             ],
-            "effects": [
-                {
-                    "Effect type": "Drop shadow",
-                    "Position": [
-                        {
-                            "x": 0,
-                            "y": 6
-                        }
-                    ],
-                    "Blur": 5,
-                    "Spread": 0,
-                    "Color": [
-                        {
-                            "Value": "#000000",
-                            "Opacity": "25%"
-                
-                        }
-                    ]
-                },
+            "effects": [                
                 {
                     "Effect type": "Inner shadow",
                     "Position": [

@@ -134,7 +134,14 @@
       background-color: var(--primary-color-hover);
     }
 
+    .button-row {
+      display: flex;
+      gap: 8px;
+      margin-top: 16px;
+    }
+
     .button {
+      flex-grow: 1;
       background-color: var(--primary-color);
       color: white;
       border: none;
@@ -214,7 +221,10 @@
     </label>
   </div>
 
-  <button class="button" id="create-btn" style="width:100%; margin-top: 16px;">Create Liquid Glass</button>
+  <div class="button-row">
+    <button class="button" id="create-btn">Create</button>
+    <button class="button" id="update-all-btn">Update All</button>
+  </div>
 
   <footer>
     by Prabin Pebam
@@ -341,6 +351,10 @@
         frost: +document.getElementById('frost').value,
       };
       send('create-lg-element', { params });
+    };
+
+    document.getElementById('update-all-btn').onclick = () => {
+      send('update-all-lg-elements');
     };
 
     /* WebGL init */
@@ -479,6 +493,10 @@
           gl.uniform1i(uniforms.backgroundTexture, 0);
 
           updateUniformsAndRedraw(msg.params);
+          
+          // After redrawing, send the result back with the node ID
+          const croppedDataUrl = cropCanvasResult(canvas, OFFSET);
+          send('apply-image-fill', { data: croppedDataUrl, nodeId: msg.nodeId });
         };
         img.src=msg.data;
       }
@@ -488,8 +506,6 @@
       if(!tex || !currentShape)return;
       gl.clear(gl.COLOR_BUFFER_BIT);
       gl.drawArrays(gl.TRIANGLE_STRIP,0,4);
-      const croppedDataUrl = cropCanvasResult(canvas, OFFSET);
-      send('apply-image-fill',{data:croppedDataUrl});
     }
 
     function cropCanvasResult(sourceCanvas, offset) {
