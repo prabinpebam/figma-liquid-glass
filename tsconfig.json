@@ -1,14 +1,17 @@
 {
   "compilerOptions": {
     "target": "es2017",
+    "module": "commonjs",
     "lib": ["es2017", "dom"],
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "moduleResolution": "node",
     "outDir": "./dist",
     "rootDir": "./src",
-    "strict": true,
-    "moduleResolution": "node",
-    "esModuleInterop": true,
-    "types": ["@figma/plugin-typings"],
-    "skipLibCheck": true
+    "typeRoots": ["./node_modules/@types", "./node_modules/@figma"]
   },
-  "include": ["src/**/*.ts"]
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "dist"]
 }

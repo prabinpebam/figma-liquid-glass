@@ -19,10 +19,10 @@ The parameter in the following JSON represents native Figma parameters.
 {
     "layer name": "[LG - ET11 RS29 CA5 BB0]",
     "layer type": "frame",
-    "clip content": true,
+    "clip content": false,
     "height": "100px",
     "width": "200px",
-    "corner radius": "50px",
+    "corner radius": "50px for rectangle shape, NA for ellipses and flattened shape",
     "effects": [
         {
             "Effect type": "Drop shadow",
@@ -45,7 +45,7 @@ The parameter in the following JSON represents native Figma parameters.
     ],
     "children": [
         {
-            "layer name": "Highlight layer",
+            "layer name": "Highlight group",
             "layer type": "frame",
             "clip content": true,
             "height": "100% of parent",
@@ -63,13 +63,55 @@ The parameter in the following JSON represents native Figma parameters.
                     "layer type": "rectangle",
                     "height": "100% of parent",
                     "width": "100% of parent",
-                    "corner radius": "10px",
+                    "corner radius": "always matched with main LG parent element for rectangle shape, NA for ellipses and flattened shape",
                     "stroke": [
                         {
                             "Position": "Center",
                             "Weight": 12,                            
                             "opacity": "100%",
-                            "color": "Color should be exactly same as the stroke of Refraction layer",                                                    
+                            "color": [
+                        {
+                            "color type": "Angular gradient",
+                            "stops": [
+                                {
+                                    "Stop number" : 1,
+                                    "position": "12%",
+                                    "color": "#ffffff",
+                                    "opacity": "100%"
+                                },
+                                {
+                                    "Stop number" : 2,
+                                    "position": "28%",
+                                    "color": "#ffffff",
+                                    "opacity": "0%"
+                                },
+                                {
+                                    "Stop number" : 3,
+                                    "position": "36%",
+                                    "color": "#ffffff",
+                                    "opacity": "0%"
+                                },
+                                {
+                                    "Stop number" : 4,
+                                    "position": "64%",
+                                    "color": "#ffffff",
+                                    "opacity": "100%"
+                                },
+                                {
+                                    "Stop number" : 5,
+                                    "position": "78%",
+                                    "color": "#ffffff",
+                                    "opacity": "0%"
+                                },
+                                {
+                                    "Stop number" : 6,
+                                    "position": "89%",
+                                    "color": "#ffffff",
+                                    "opacity": "0%"
+                                }
+                            ]
+                        }
+                    ]                                                    
                         }
                     ],
                     "effect": [
@@ -78,6 +120,18 @@ The parameter in the following JSON represents native Figma parameters.
                         }
                     ],
                     "role": "Reflection effect simulated with a blurred layer with border"
+                },
+                {
+                    "layer name": "Shape mask",
+                    "layer type": "rectangle/Oval/flattened shape",
+                    "corner radius": "always matched with main LG parent element for rectangle shape, NA for ellipses and flattened shape",
+                    "mask layer": true,
+                    "fill": "#000000",
+                    "stroke": false,
+                    "height": "100% of parent",
+                    "width": "100% of parent",
+                    "corner radius": "match with LG main parent element for rectangle shape, NA for ellipses and flattened shape",
+                    "role": "This is either rectangle, ellipse or flattened shape as derived from how the LG element was created. This is always matched with the Refraction layer shape."
                 }
             ]
         },
@@ -96,30 +150,58 @@ The parameter in the following JSON represents native Figma parameters.
             "role": "Layer where for user content, can be empty."
         },
         {
-            "layer name": "Tint layer",
-            "layer type": "rectangle",
+            "layer name": "tint group",
+            "layer type": "frame",
+            "clip content": true,
             "height": "100% of parent",
-            "width": "100% of parent",
+            "width": "100% of parent",            
             "constraints": [
                 {
                     "x-axis": "scale",
                     "y-axis": "scale"
                 }
             ],
-            "Fill color": [
+            "role": "Layer for all highlight effect for liquid glass should should go above user content.",
+            "children": [
                 {
-                    "value": "#ffffff",
-                    "Opacity": "20%"
+                    "layer name": "Tint layer",
+                    "layer type": "rectangle",
+                    "height": "100% of parent",
+                    "width": "100% of parent",
+                    "constraints": [
+                        {
+                            "x-axis": "scale",
+                            "y-axis": "scale"
+                        }
+                    ],
+                    "Fill color": [
+                        {
+                            "value": "#ffffff",
+                            "Opacity": "20%"
+                        }
+                    ],
+                    "role": "This layer provides a tint effect which users can control."
+                },
+                {
+                    "layer name": "Shape mask",
+                    "layer type": "rectangle/Oval/flattened shape",
+                    "corner radius": "always matched with main LG parent element for rectangle shape, NA for ellipses and flattened shape",
+                    "mask layer": true,
+                    "fill": "#000000",
+                    "stroke": false,
+                    "height": "100% of parent",
+                    "width": "100% of parent",
+                    "corner radius": "match with LG main parent element for rectangle shape, NA for ellipses and flattened shape",
+                    "role": "This is either rectangle, ellipse or flattened shape as derived from how the LG element was created. This is always matched with the Refraction layer shape."
                 }
-            ],
-            "role": "This layer provides a tint effect which users can control."
-        }
+            ]
+        },
         {
             "layer name": "Refraction layer",
             "layer type": "rectangle",
             "height": "100% of parent",
             "width": "100% of parent",
-            "corner radius": "10px",
+            "corner radius": "always matched with main LG parent element for rectangle shape, NA for ellipses and flattened shape",
             "constraints": [
                 {
                     "x-axis": "scale",

@@ -1,33 +1,24 @@
 {
   "name": "liquid-glass",
   "version": "1.0.0",
-  "private": true,
-  "description": "A Figma plugin that creates a liquid glass effect.",
-  "main": "src/code.ts",
+  "description": "A Figma plugin that creates glass morphism effects",
+  "main": "dist/code.js",
   "scripts": {
-    "build": "tsc -p tsconfig.plugin.json && cpx \"src/ui/**/*.html\" dist/ui",
-    "watch": "npm-run-all --parallel watch:*",
-    "watch:ts": "tsc -w -p tsconfig.plugin.json",
-    "watch:ui": "onchange \"src/ui/**/*\" -- cpx \"{{changed}}\" dist/ui --parent",
-    "type-check": "tsc --noEmit"
+    "build": "npm run build:clear && npm run build:dirs && npm run build:main && npm run build:ui && npm run build:copy",
+    "build:clear": "node -e \"require('fs').rmSync('dist', {recursive: true, force: true})\"",
+    "build:dirs": "node -e \"require('fs').mkdirSync('dist/ui', {recursive: true})\"",
+    "build:main": "esbuild src/code.ts --bundle --outfile=dist/code.js --target=es2017",
+    "build:ui": "esbuild src/ui/index.ts --bundle --outfile=dist/ui/ui.js --target=es2017",
+    "build:copy": "node -e \"require('fs').copyFileSync('src/ui/index.html', 'dist/ui/index.html')\"",
+    "watch": "npm run build:main -- --watch & npm run build:ui -- --watch",
+    "dev": "npm run build && npm run watch"
   },
-  "keywords": [
-    "figma",
-    "plugin",
-    "liquid glass"
-  ],
   "author": "Prabin Pebam",
   "license": "MIT",
   "devDependencies": {
-    "@figma/plugin-typings": "^1.74.0",
-    "cpx": "^1.2.1",
-    "npm-run-all": "^4.1.5",
-    "onchange": "^7.1.0",
+    "@figma/plugin-typings": "^1.50.0",
+    "@types/node": "^18.0.0",
+    "esbuild": "^0.19.0",
     "typescript": "^5.4.0"
-  },
-  "overrides": {
-    "braces": "^3.0.3",
-    "micromatch": "^4.0.8",
-    "minimatch": "^3.1.2"
   }
 }
