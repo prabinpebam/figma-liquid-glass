@@ -1,24 +1,21 @@
 {
   "name": "liquid-glass",
   "version": "1.0.0",
-  "description": "A Figma plugin that creates glass morphism effects",
+  "description": "A Figma plugin for creating liquid glass effects",
   "main": "dist/code.js",
   "scripts": {
-    "build": "npm run build:clear && npm run build:dirs && npm run build:main && npm run build:ui && npm run build:copy",
+    "build": "npm run build:clear && npm run build:dirs && npm run build:main && npm run build:copy",
     "build:clear": "node -e \"require('fs').rmSync('dist', {recursive: true, force: true})\"",
     "build:dirs": "node -e \"require('fs').mkdirSync('dist/ui', {recursive: true})\"",
     "build:main": "esbuild src/code.ts --bundle --outfile=dist/code.js --target=es2017",
-    "build:ui": "esbuild src/ui/index.ts --bundle --outfile=dist/ui/ui.js --target=es2017",
-    "build:copy": "node -e \"require('fs').copyFileSync('src/ui/index.html', 'dist/ui/index.html')\"",
-    "watch": "npm run build:main -- --watch & npm run build:ui -- --watch",
-    "dev": "npm run build && npm run watch"
+    "build:copy": "node -e \"require('fs').copyFileSync('src/ui/index.html', 'dist/ui/index.html'); require('fs').copyFileSync('manifest.json', 'dist/manifest.json');\""
   },
   "author": "Prabin Pebam",
   "license": "MIT",
   "devDependencies": {
-    "@figma/plugin-typings": "^1.50.0",
-    "@types/node": "^18.0.0",
-    "esbuild": "^0.19.0",
-    "typescript": "^5.4.0"
+    "@figma/plugin-typings": "^1.56.0",
+    "@types/node": "^18.15.5",
+    "esbuild": "^0.17.12",
+    "typescript": "^5.0.2"
   }
 }
