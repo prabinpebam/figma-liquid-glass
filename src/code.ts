@@ -51,6 +51,7 @@ async function createLgElement(params: any) {
   mainFrame.resize(200, 100);
   mainFrame.cornerRadius = 50;
   mainFrame.clipsContent = false;
+  mainFrame.fills = []; // Ensure no fill
   mainFrame.x = figma.viewport.center.x - 100;
   mainFrame.y = figma.viewport.center.y - 50;
 
@@ -182,45 +183,98 @@ async function updateLgElement(node: FrameNode, params: any, context: 'create' |
   const height = node.height;
   const cornerRadius = typeof node.cornerRadius === 'number' ? node.cornerRadius : 0;
 
-  // Update refraction layer to match main frame
-  if (refractionLayer.type === 'RECTANGLE') {
-    const rect = refractionLayer as RectangleNode;
-    rect.resize(width, height);
-    rect.cornerRadius = cornerRadius;
-  } else if (refractionLayer.type === 'ELLIPSE') {
-    refractionLayer.resize(width, height);
-  }
-  
-  // Update all shape masks to match refraction layer
-  const tintGroup = node.findOne(n => n.name === 'tint group') as FrameNode | null;
-  if (tintGroup) {
-    tintGroup.resize(width, height);
-    const tintMask = tintGroup.findOne(n => n.name === 'Shape mask');
-    if (tintMask) {
-      tintMask.resize(width, height);
-      if (tintMask.type === 'RECTANGLE') {
-        (tintMask as RectangleNode).cornerRadius = cornerRadius;
-      }
-    }
-  }
-  
-  const highlightGroup = node.findOne(n => n.name === 'Highlight group') as FrameNode | null;
-  if (highlightGroup) {
-    highlightGroup.resize(width, height);
-    const highlightMask = highlightGroup.findOne(n => n.name === 'Shape mask');
-    const highlightReflection = highlightGroup.findOne(n => n.name === 'Highlight reflection');
+  // For complex shapes (vector refraction layer), all elements should already be positioned at origin
+  if (refractionLayer.type === 'VECTOR') {
+    // For vector shapes, the refraction layer should stay at origin (0,0) within the frame
+    // All masks and highlights should also be at origin since they're clones
     
-    if (highlightMask) {
-      highlightMask.resize(width, height);
-      if (highlightMask.type === 'RECTANGLE') {
-        (highlightMask as RectangleNode).cornerRadius = cornerRadius;
+    // Update tint group
+    const tintGroup = node.findOne(n => n.name === 'tint group') as FrameNode | null;
+    if (tintGroup) {
+      tintGroup.resize(width, height);
+      const tintMask = tintGroup.findOne(n => n.name === 'Shape mask');
+      const tintLayer = tintGroup.findOne(n => n.name === 'Tint layer');
+      
+      if (tintMask && tintMask.type === 'VECTOR') {
+        // Vector mask should maintain position at origin and scale with frame
+        tintMask.x = 0;
+        tintMask.y = 0;
+        // Vector scaling is handled automatically by constraints
+      }
+      
+      if (tintLayer) {
+        tintLayer.resize(width, height);
+        tintLayer.x = 0;
+        tintLayer.y = 0;
       }
     }
     
-    if (highlightReflection) {
-      highlightReflection.resize(width, height);
-      if (highlightReflection.type === 'RECTANGLE') {
-        (highlightReflection as RectangleNode).cornerRadius = cornerRadius;
+    // Update highlight group
+    const highlightGroup = node.findOne(n => n.name === 'Highlight group') as FrameNode | null;
+    if (highlightGroup) {
+      highlightGroup.resize(width, height);
+      const highlightMask = highlightGroup.findOne(n => n.name === 'Shape mask');
+      const highlightReflection = highlightGroup.findOne(n => n.name === 'Highlight reflection');
+      
+      if (highlightMask && highlightMask.type === 'VECTOR') {
+        highlightMask.x = 0;
+        highlightMask.y = 0;
+        // Vector scaling is handled automatically by constraints
+      }
+      
+      if (highlightReflection && highlightReflection.type === 'VECTOR') {
+        highlightReflection.x = 0;
+        highlightReflection.y = 0;
+        // Vector scaling is handled automatically by constraints
+      }
+    }
+  } else {
+    // Handle simple shapes (rectangles/ellipses) as before
+    if (refractionLayer.type === 'RECTANGLE') {
+      const rect = refractionLayer as RectangleNode;
+      rect.resize(width, height);
+      rect.cornerRadius = cornerRadius;
+    } else if (refractionLayer.type === 'ELLIPSE') {
+      refractionLayer.resize(width, height);
+    }
+    
+    // Update all shape masks to match refraction layer
+    const tintGroup = node.findOne(n => n.name === 'tint group') as FrameNode | null;
+    if (tintGroup) {
+      tintGroup.resize(width, height);
+      const tintMask = tintGroup.findOne(n => n.name === 'Shape mask');
+      const tintLayer = tintGroup.findOne(n => n.name === 'Tint layer');
+      
+      if (tintMask) {
+        tintMask.resize(width, height);
+        if (tintMask.type === 'RECTANGLE') {
+          (tintMask as RectangleNode).cornerRadius = cornerRadius;
+        }
+      }
+      
+      if (tintLayer) {
+        tintLayer.resize(width, height);
+      }
+    }
+    
+    const highlightGroup = node.findOne(n => n.name === 'Highlight group') as FrameNode | null;
+    if (highlightGroup) {
+      highlightGroup.resize(width, height);
+      const highlightMask = highlightGroup.findOne(n => n.name === 'Shape mask');
+      const highlightReflection = highlightGroup.findOne(n => n.name === 'Highlight reflection');
+      
+      if (highlightMask) {
+        highlightMask.resize(width, height);
+        if (highlightMask.type === 'RECTANGLE') {
+          (highlightMask as RectangleNode).cornerRadius = cornerRadius;
+        }
+      }
+      
+      if (highlightReflection) {
+        highlightReflection.resize(width, height);
+        if (highlightReflection.type === 'RECTANGLE') {
+          (highlightReflection as RectangleNode).cornerRadius = cornerRadius;
+        }
       }
     }
   }
@@ -249,12 +303,20 @@ async function createOrUpdateLgFromSelection(params: any) {
   const shapeType = getShapeType(selectedNode);
   
   if (shapeType === 'complex') {
-    // Complex shape workflow - flatten and use as refraction layer
+    // Complex shape workflow - flatten FIRST, then use its bounds
     const flattened = figma.flatten([selectedNode]);
     if (!flattened || flattened.type !== 'VECTOR') {
       figma.notify("Failed to process complex shape", { error: true });
       return;
     }
+    
+    // Use flattened shape's bounds for everything - this is the actual bounding box
+    const flattenedBounds = {
+      x: flattened.x,
+      y: flattened.y,
+      width: flattened.width,
+      height: flattened.height
+    };
     
     try {
       const svgData = await flattened.exportAsync({ 
@@ -269,59 +331,145 @@ async function createOrUpdateLgFromSelection(params: any) {
         svgString += String.fromCharCode(svgData[i]);
       }
       
-      // Create LG element with complex shape structure
+      // Create LG element using flattened shape's exact bounds
       const mainFrame = figma.createFrame();
       mainFrame.name = formatLayerName(params);
-      mainFrame.resize(flattened.width, flattened.height);
-      mainFrame.x = flattened.x;
-      mainFrame.y = flattened.y;
+      mainFrame.resize(flattenedBounds.width, flattenedBounds.height);
+      mainFrame.x = flattenedBounds.x;
+      mainFrame.y = flattenedBounds.y;
       mainFrame.clipsContent = false;
+      mainFrame.fills = []; // Ensure no fill
       
       // Main frame effects
       mainFrame.effects = [
         { type: 'DROP_SHADOW', color: { r: 0, g: 0, b: 0, a: 0.25 }, offset: { x: 0, y: 6 }, radius: 5, spread: 0, visible: true, blendMode: 'NORMAL' }
       ];
 
-      // Use flattened vector as refraction layer
+      // Position flattened shape at origin within the main frame (since main frame matches its bounds)
       flattened.name = "Refraction layer";
       flattened.constraints = { horizontal: 'SCALE', vertical: 'SCALE' };
+      flattened.x = 0; // At origin within main frame
+      flattened.y = 0; // At origin within main frame
+      
+      // Apply stroke effects to the refraction layer
+      if ('strokes' in flattened) {
+        flattened.strokeWeight = 1;
+        flattened.strokeAlign = 'INSIDE';
+        flattened.strokes = [{
+          type: 'GRADIENT_ANGULAR',
+          gradientTransform: [[1, 0, 0], [0, 1, 0]],
+          gradientStops: [
+            { position: 0.12, color: { r: 1, g: 1, b: 1, a: 1.0 } },
+            { position: 0.28, color: { r: 1, g: 1, b: 1, a: 0.4 } },
+            { position: 0.36, color: { r: 1, g: 1, b: 1, a: 0.4 } },
+            { position: 0.64, color: { r: 1, g: 1, b: 1, a: 1.0 } },
+            { position: 0.78, color: { r: 1, g: 1, b: 1, a: 0.4 } },
+            { position: 0.89, color: { r: 1, g: 1, b: 1, a: 0.4 } },
+          ],
+        }];
+      }
+      
+      if ('effects' in flattened) {
+        flattened.effects = [
+          { type: 'INNER_SHADOW', color: { r: 0, g: 0, b: 0, a: 0.4 }, offset: { x: 10, y: 10 }, radius: 10, spread: 0, visible: true, blendMode: 'NORMAL' },
+        ];
+      }
+      
       mainFrame.appendChild(flattened);
       
-      // Create tint group with vector mask
+      // 2. Tint group - uses main frame dimensions
       const tintGroup = figma.createFrame();
       tintGroup.name = "tint group";
       tintGroup.constraints = { horizontal: 'SCALE', vertical: 'SCALE' };
       tintGroup.clipsContent = true;
       tintGroup.fills = [];
-      tintGroup.resize(mainFrame.width, mainFrame.height);
+      tintGroup.resize(flattenedBounds.width, flattenedBounds.height);
       mainFrame.appendChild(tintGroup);
 
-      // Clone the flattened shape for mask (goes first)
+      // Shape mask - clone the refraction layer for exact match
       const tintMask = flattened.clone();
       tintMask.name = "Shape mask";
       tintMask.fills = [{ type: 'SOLID', color: { r: 0, g: 0, b: 0 } }];
       tintMask.strokes = [];
+      tintMask.effects = [];
+      // Position at origin within tint group (same as refraction layer)
+      tintMask.x = 0;
+      tintMask.y = 0;
       tintGroup.appendChild(tintMask);
 
-      // Tint layer goes on top
+      // Tint layer - covers entire frame
       const tintLayer = figma.createRectangle();
       tintLayer.name = "Tint layer";
       tintLayer.constraints = { horizontal: 'SCALE', vertical: 'SCALE' };
       tintLayer.fills = [{ type: 'SOLID', color: { r: 1, g: 1, b: 1 }, opacity: 0.2 }];
-      tintLayer.resize(mainFrame.width, mainFrame.height);
+      tintLayer.resize(flattenedBounds.width, flattenedBounds.height);
+      tintLayer.x = 0;
+      tintLayer.y = 0;
       tintGroup.appendChild(tintLayer);
       
       // Set mask
       tintGroup.children[0].isMask = true;
 
-      // Content layer
+      // 3. Content layer
       const contentFrame = figma.createFrame();
       contentFrame.name = "Content";
       contentFrame.constraints = { horizontal: 'SCALE', vertical: 'SCALE' };
       contentFrame.fills = [];
       contentFrame.clipsContent = false;
-      contentFrame.resize(mainFrame.width, mainFrame.height);
+      contentFrame.resize(flattenedBounds.width, flattenedBounds.height);
       mainFrame.appendChild(contentFrame);
+      
+      // 4. Highlight group
+      const highlightGroup = figma.createFrame();
+      highlightGroup.name = "Highlight group";
+      highlightGroup.constraints = { horizontal: 'SCALE', vertical: 'SCALE' };
+      highlightGroup.clipsContent = true;
+      highlightGroup.fills = [];
+      highlightGroup.resize(flattenedBounds.width, flattenedBounds.height);
+      mainFrame.appendChild(highlightGroup);
+
+      // Shape mask - clone the refraction layer for exact match
+      const highlightMask = flattened.clone();
+      highlightMask.name = "Shape mask";
+      highlightMask.fills = [{ type: 'SOLID', color: { r: 0, g: 0, b: 0 } }];
+      highlightMask.strokes = [];
+      highlightMask.effects = [];
+      // Position at origin within highlight group (same as refraction layer)
+      highlightMask.x = 0;
+      highlightMask.y = 0;
+      highlightGroup.appendChild(highlightMask);
+
+      // Highlight reflection - clone and apply effects
+      const highlightReflection = flattened.clone();
+      highlightReflection.name = "Highlight reflection";
+      highlightReflection.constraints = { horizontal: 'SCALE', vertical: 'SCALE' };
+      highlightReflection.effects = [{ type: 'LAYER_BLUR', blurType: 'NORMAL', radius: 14, visible: true }];
+      highlightReflection.fills = [];
+      highlightReflection.x = 0;
+      highlightReflection.y = 0;
+      
+      // Apply highlight stroke effects
+      if ('strokes' in highlightReflection) {
+        highlightReflection.strokeWeight = 12;
+        highlightReflection.strokeAlign = 'CENTER';
+        highlightReflection.strokes = [{
+          type: 'GRADIENT_ANGULAR',
+          gradientTransform: [[1, 0, 0], [0, 1, 0]],
+          gradientStops: [
+            { position: 0.12, color: { r: 1, g: 1, b: 1, a: 1.0 } },
+            { position: 0.28, color: { r: 1, g: 1, b: 1, a: 0.0 } },
+            { position: 0.36, color: { r: 1, g: 1, b: 1, a: 0.0 } },
+            { position: 0.64, color: { r: 1, g: 1, b: 1, a: 1.0 } },
+            { position: 0.78, color: { r: 1, g: 1, b: 1, a: 0.0 } },
+            { position: 0.89, color: { r: 1, g: 1, b: 1, a: 0.0 } },
+          ],
+        }];
+      }
+      
+      highlightGroup.appendChild(highlightReflection);
+
+      // Set mask
+      highlightGroup.children[0].isMask = true;
       
       figma.currentPage.selection = [mainFrame];
       await captureAndSendComplex(mainFrame, params, svgString);
@@ -340,6 +488,7 @@ async function createOrUpdateLgFromSelection(params: any) {
     mainFrame.x = selectedNode.x;
     mainFrame.y = selectedNode.y;
     mainFrame.clipsContent = false;
+    mainFrame.fills = []; // Ensure no fill
     
     const cornerRadius = selectedNode.type === 'RECTANGLE' ? selectedNode.cornerRadius : 0;
     if (selectedNode.type === 'RECTANGLE') {
@@ -716,66 +865,26 @@ function onDocumentChange() {
   // Update refraction layer
   const refractionLayer = node.findOne(n => n.name === 'Refraction layer');
   if (refractionLayer) {
-    refractionLayer.resize(width, height);
-    if (refractionLayer.type === 'RECTANGLE') {
-      (refractionLayer as RectangleNode).cornerRadius = cornerRadius;
-    }
-  }
-
-  // Update tint group and its mask
-  const tintGroup = node.findOne(n => n.name === 'tint group') as FrameNode | null;
-  if (tintGroup) {
-    tintGroup.resize(width, height);
-    const tintMask = tintGroup.findOne(n => n.name === 'Shape mask');
-    const tintLayer = tintGroup.findOne(n => n.name === 'Tint layer');
-    
-    if (tintMask) {
-      tintMask.resize(width, height);
-      if (tintMask.type === 'RECTANGLE') {
-        (tintMask as RectangleNode).cornerRadius = cornerRadius;
-      }
-    }
-    
-    if (tintLayer) {
-      tintLayer.resize(width, height);
-    }
-  }
-
-  // Update highlight group and its components
-  const highlightGroup = node.findOne(n => n.name === 'Highlight group') as FrameNode | null;
-  if (highlightGroup) {
-    highlightGroup.resize(width, height);
-    const highlightMask = highlightGroup.findOne(n => n.name === 'Shape mask');
-    const highlightReflection = highlightGroup.findOne(n => n.name === 'Highlight reflection');
-    
-    if (highlightMask) {
-      highlightMask.resize(width, height);
-      if (highlightMask.type === 'RECTANGLE') {
-        (highlightMask as RectangleNode).cornerRadius = cornerRadius;
-      }
-    }
-    
-    if (highlightReflection) {
-      highlightReflection.resize(width, height);
-      if (highlightReflection.type === 'RECTANGLE') {
-        (highlightReflection as RectangleNode).cornerRadius = cornerRadius;
+    if (refractionLayer.type === 'VECTOR') {
+      // For vector shapes, maintain proportional positioning
+      // The vector shape should maintain its relative position and scale
+      // This is handled in updateLgElement
+    } else {
+      refractionLayer.resize(width, height);
+      if (refractionLayer.type === 'RECTANGLE') {
+        (refractionLayer as RectangleNode).cornerRadius = cornerRadius;
       }
     }
   }
 
-  // Update content frame
-  const contentFrame = node.findOne(n => n.name === 'Content') as FrameNode | null;
-  if (contentFrame) {
-    contentFrame.resize(width, height);
-  }
-
-  // Update last bounds and trigger effect update
-  editState.lastBounds = now;
-  
+  // Update using the improved updateLgElement function
   const params = parseLayerName(editState.node.name);
   if (params) {
-    captureAndSend(editState.node, params);
+    updateLgElement(node, params, 'update');
   }
+  
+  // Update last bounds
+  editState.lastBounds = now;
 }
 
 let isUpdatingAll = false;

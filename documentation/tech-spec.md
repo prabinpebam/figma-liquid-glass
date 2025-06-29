@@ -60,7 +60,7 @@ The parameter in the following JSON represents native Figma parameters.
             "children": [
                 {
                     "layer name": "Highlight reflection",
-                    "layer type": "rectangle",
+                    "layer type": "rectangle/Oval/flattened shape as per the refraction layer shape",
                     "height": "100% of parent",
                     "width": "100% of parent",
                     "corner radius": "always matched with main LG parent element for rectangle shape, NA for ellipses and flattened shape",
