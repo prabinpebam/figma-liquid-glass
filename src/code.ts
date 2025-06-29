@@ -766,6 +766,41 @@ function getOverlappingNodesAbove(lgElement: FrameNode): { node: SceneNode, orig
   return nodesToHide;
 }
 
+// Helper function to check if a rectangle is visible in the current viewport
+function isRectInViewport(rect: { x: number; y: number; width: number; height: number }): boolean {
+  const viewport = figma.viewport;
+  const viewportBounds = {
+    left: viewport.center.x - (viewport.bounds.width / 2) / viewport.zoom,
+    right: viewport.center.x + (viewport.bounds.width / 2) / viewport.zoom,
+    top: viewport.center.y - (viewport.bounds.height / 2) / viewport.zoom,
+    bottom: viewport.center.y + (viewport.bounds.height / 2) / viewport.zoom
+  };
+  
+  // Check if the rectangle is completely within the viewport
+  return rect.x >= viewportBounds.left &&
+         rect.y >= viewportBounds.top &&
+         rect.x + rect.width <= viewportBounds.right &&
+         rect.y + rect.height <= viewportBounds.bottom;
+}
+
+// Helper function to scroll to node only if needed
+function scrollToNodeIfNeeded(node: FrameNode): void {
+  const { width, height } = node;
+  const captureRect = { 
+    x: node.absoluteTransform[0][2] - OFFSET, 
+    y: node.absoluteTransform[1][2] - OFFSET, 
+    width: width + OFFSET * 2, 
+    height: height + OFFSET * 2 
+  };
+  
+  if (!isRectInViewport(captureRect)) {
+    console.log(`Scrolling to ${node.name} - capture area not in viewport`);
+    figma.viewport.scrollAndZoomIntoView([node]);
+  } else {
+    console.log(`Skipping scroll for ${node.name} - already in viewport`);
+  }
+}
+
 async function captureAndSendComplex(target: FrameNode, params: any, svgData?: string, nodeId: string = target.id) {
   const { width, height } = target;
   const captureRect = { x: target.absoluteTransform[0][2] - OFFSET, y: target.absoluteTransform[1][2] - OFFSET, width: width + OFFSET * 2, height: height + OFFSET * 2 };
@@ -923,12 +958,17 @@ async function onSelectionChange() {
     }
     figma.ui.postMessage({ type: 'selection-changed', isLgElement: true, canApplyEffect: false });
   } else if (sel.length === 1 && !parseLayerName(sel[0].name)) {
-    // Selected a non-LG element - can apply effect
+    // Selected a single non-LG element - can apply effect
     editState.node = null;
     editState.lastBounds = null;
     figma.ui.postMessage({ type: 'selection-changed', isLgElement: false, canApplyEffect: true });
+  } else if (sel.length > 1) {
+    // Multiple selection - show "Update selection" option
+    editState.node = null;
+    editState.lastBounds = null;
+    figma.ui.postMessage({ type: 'selection-changed', isLgElement: false, canApplyEffect: false });
   } else {
-    // No selection or multiple selection
+    // No selection
     editState.node = null;
     editState.lastBounds = null;
     figma.ui.postMessage({ type: 'selection-cleared' });
@@ -979,6 +1019,31 @@ function onDocumentChange() {
 let isUpdatingAll = false;
 let scriptIsMakingChange = false;
 
+// Helper function to find all LG elements within a selection (including nested)
+function findLgElementsInSelection(nodes: readonly SceneNode[]): FrameNode[] {
+  const lgElements: FrameNode[] = [];
+  
+  function traverse(node: SceneNode) {
+    // Check if this node is an LG element
+    if (node.type === 'FRAME' && parseLayerName(node.name)) {
+      lgElements.push(node);
+    }
+    
+    // Recursively check children
+    if ('children' in node) {
+      for (const child of node.children) {
+        traverse(child);
+      }
+    }
+  }
+  
+  for (const node of nodes) {
+    traverse(node);
+  }
+  
+  return lgElements;
+}
+
 figma.ui.onmessage = async (msg) => {
   console.log('Plugin received message:', msg.type, msg);
   
@@ -1022,6 +1087,75 @@ figma.ui.onmessage = async (msg) => {
       } else {
         console.log('Could not find node to fill');
       }
+    } else if (msg.type === 'update-selection-lg-elements') {
+      console.log('Updating LG elements in selection');
+      if (isUpdatingAll) return;
+      isUpdatingAll = true;
+      scriptIsMakingChange = true;
+
+      const originalViewport = { center: figma.viewport.center, zoom: figma.viewport.zoom };
+      const selection = figma.currentPage.selection;
+      
+      if (selection.length === 0) {
+        figma.notify("Please select elements containing Liquid Glass components.", { error: true });
+        isUpdatingAll = false;
+        scriptIsMakingChange = false;
+        return;
+      }
+      
+      const lgNodes = findLgElementsInSelection(selection);
+      
+      if (lgNodes.length === 0) {
+        figma.notify("No Liquid Glass elements found in selection.");
+        isUpdatingAll = false;
+        scriptIsMakingChange = false;
+        return;
+      }
+
+      let notification = figma.notify(`Updating ${lgNodes.length} element(s) in selection...`);
+      let scrollCount = 0;
+
+      try {
+        for (let i = 0; i < lgNodes.length; i++) {
+          if (!isUpdatingAll) {
+            throw new Error("Update process was interrupted by the user.");
+          }
+          const node = lgNodes[i];
+          notification.cancel();
+          notification = figma.notify(`Updating ${i + 1} of ${lgNodes.length}: ${node.name}`);
+          
+          const params = parseLayerName(node.name);
+          if (params) {
+            const shouldScroll = !isRectInViewport({
+              x: node.absoluteTransform[0][2] - OFFSET,
+              y: node.absoluteTransform[1][2] - OFFSET,
+              width: node.width + OFFSET * 2,
+              height: node.height + OFFSET * 2
+            });
+            
+            if (shouldScroll) {
+              scrollToNodeIfNeeded(node);
+              scrollCount++;
+              // Small delay after scrolling to let viewport settle
+              await new Promise(resolve => setTimeout(resolve, 150));
+            }
+            
+            await captureAndSend(node, params, node.id);
+            await new Promise(resolve => setTimeout(resolve, 100)); // Small delay for UI to process
+          }
+        }
+        notification.cancel();
+        figma.notify(`Successfully updated ${lgNodes.length} element(s) in selection. (Scrolled ${scrollCount} times)`);
+      } catch (e) {
+        notification.cancel();
+        const message = e instanceof Error ? e.message : String(e);
+        figma.notify(`Update stopped: ${message}`, { error: true });
+      } finally {
+        figma.viewport.center = originalViewport.center;
+        figma.viewport.zoom = originalViewport.zoom;
+        isUpdatingAll = false;
+        scriptIsMakingChange = false;
+      }
     } else if (msg.type === 'update-all-lg-elements') {
       console.log('Updating all LG elements');
       if (isUpdatingAll) return;
@@ -1039,6 +1173,7 @@ figma.ui.onmessage = async (msg) => {
       }
 
       let notification = figma.notify(`Updating ${lgNodes.length} element(s)...`);
+      let scrollCount = 0;
 
       try {
         for (let i = 0; i < lgNodes.length; i++) {
@@ -1051,13 +1186,26 @@ figma.ui.onmessage = async (msg) => {
           
           const params = parseLayerName(node.name);
           if (params) {
-            figma.viewport.scrollAndZoomIntoView([node]);
+            const shouldScroll = !isRectInViewport({
+              x: node.absoluteTransform[0][2] - OFFSET,
+              y: node.absoluteTransform[1][2] - OFFSET,
+              width: node.width + OFFSET * 2,
+              height: node.height + OFFSET * 2
+            });
+            
+            if (shouldScroll) {
+              scrollToNodeIfNeeded(node);
+              scrollCount++;
+              // Small delay after scrolling to let viewport settle
+              await new Promise(resolve => setTimeout(resolve, 150));
+            }
+            
             await captureAndSend(node, params, node.id);
             await new Promise(resolve => setTimeout(resolve, 100)); // Small delay for UI to process
           }
         }
         notification.cancel();
-        figma.notify(`Successfully updated ${lgNodes.length} element(s).`);
+        figma.notify(`Successfully updated ${lgNodes.length} element(s). (Scrolled ${scrollCount} times)`);
       } catch (e) {
         notification.cancel();
         const message = e instanceof Error ? e.message : String(e);

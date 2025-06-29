@@ -62,7 +62,8 @@ The plugin operates in three main modes: creating, editing, and batch updating.
    - Moving, resizing, or changing the corner radius of the element on the Figma canvas will also trigger an automatic refresh of the background effect.
 
 3. **Batch Update Mode**
-   - Click the "Update All" button to refresh every Liquid Glass element on the current page.
+   - Click the "Update all" button to refresh every Liquid Glass element on the current page.
+   - When any elements are selected (single or multiple), the button changes to "Update selection" and will update all Liquid Glass elements found within the selection (including nested ones).
    - The plugin will cycle through each element, bring it into view to capture the background, and apply the updated effect.
    - The process can be interrupted by interacting with the Figma canvas.
 
@@ -125,7 +126,8 @@ This is the plugin UI you will be working with:
 4. **Move, resize, or change the corner radius** of the main frame directly on the canvas. The effect will automatically update.
 
 ### Batch Updating
-- **Click "Update All"** in the plugin panel to refresh every Liquid Glass element on the page. This is useful after making significant changes to the background content.
+- **Click "Update all"** in the plugin panel to refresh every Liquid Glass element on the page.
+- **Click "Update selection"** (when elements are selected) to refresh only the Liquid Glass elements within your selection. This is useful for updating specific groups or frames containing multiple LG elements.
 
 ### Layer Naming Convention
 Applied effects use this naming format:

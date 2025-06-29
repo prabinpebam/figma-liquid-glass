@@ -226,7 +226,7 @@
 
   <div class="button-row">
     <button class="button" id="create-btn">Create New</button>
-    <button class="button" id="update-all-btn">Update All</button>
+    <button class="button" id="update-all-btn">Update all</button>
   </div>
 
   <footer>
@@ -564,8 +564,12 @@
       };
 
       updateAllBtn.onclick = () => {
-        console.log('Update All button clicked');
-        send('update-all-lg-elements', {});
+        console.log('Update button clicked');
+        if (updateAllBtn.textContent === 'Update selection') {
+          send('update-selection-lg-elements', {});
+        } else {
+          send('update-all-lg-elements', {});
+        }
       };
 
       // Set up sliders
@@ -615,6 +619,7 @@
       if (msg.type === 'update-ui-controls') {
         createBtn.disabled = msg.isSelected;
         createBtn.textContent = 'Create New';
+        updateAllBtn.textContent = 'Update selection'; // Always show "Update selection" when any LG element is selected
         document.getElementById('edge').value = msg.params.edge;
         document.getElementById('strength').value = msg.params.strength;
         document.getElementById('ca').value = msg.params.ca;
@@ -634,12 +639,15 @@
         if (msg.canApplyEffect) {
           createBtn.textContent = 'Apply Effect';
           createBtn.disabled = false;
+          updateAllBtn.textContent = 'Update selection'; // Show "Update selection" for any selection
         } else if (msg.isLgElement) {
           createBtn.textContent = 'Create New';
           createBtn.disabled = true;
+          updateAllBtn.textContent = 'Update selection'; // Show "Update selection" when LG element is selected
         } else {
           createBtn.textContent = 'Create New';
           createBtn.disabled = false;
+          updateAllBtn.textContent = 'Update selection'; // Show "Update selection" for any selection
         }
         return;
       }
@@ -647,6 +655,7 @@
       if (msg.type === 'selection-cleared') {
         createBtn.disabled = false;
         createBtn.textContent = 'Create New';
+        updateAllBtn.textContent = 'Update all'; // Only show "Update all" when nothing is selected
         canvas.style.display = 'none';
         if (!document.getElementById('placeholder')) {
           const newPlaceholder = document.createElement('em');
