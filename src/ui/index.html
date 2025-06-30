@@ -946,18 +946,6 @@
       };
     }
 
-    function handleControlChange() {
-      if (isMultipleSelection) {
-        // Don't update in real-time for multiple selection
-        return;
-      }
-      
-      if (createBtn.disabled) {
-        const params = getAllParams();
-        send('update-lg-element', { params });
-      }
-    }
-
     function updateUniformsAndRedraw(params) {
       if (!currentShape) return;
       gl.useProgram(program);
@@ -993,6 +981,62 @@
       return tempCanvas.toDataURL('image/png');
     }
 
+    function handleControlChange(parameterName = null) {
+      // For single LG element selection - update everything in real-time
+      if (createBtn.disabled && !isMultipleSelection) {
+        const params = getAllParams();
+        send('update-lg-element', { params });
+        return;
+      }
+      
+      // For multiple selection - only update effects parameters in real-time
+      if (isMultipleSelection && parameterName) {
+        const isEffectsParam = !['edge', 'strength', 'ca', 'frost'].includes(parameterName);
+        
+        if (isEffectsParam) {
+          // Send real-time update for effects parameters only
+          const singleParam = {};
+          singleParam[parameterName] = document.getElementById(getElementIdForParam(parameterName)).value;
+          
+          // Convert color and numeric values appropriately
+          if (parameterName.includes('Color')) {
+            singleParam[parameterName] = document.getElementById(getElementIdForParam(parameterName)).value;
+          } else if (parameterName === 'tintBlendMode') {
+            singleParam[parameterName] = document.getElementById('tint-blend-mode').value;
+          } else {
+            singleParam[parameterName] = +document.getElementById(getElementIdForParam(parameterName)).value;
+          }
+          
+          send('update-effects-realtime', { 
+            parameterName, 
+            parameterValue: singleParam[parameterName] 
+          });
+        }
+      }
+    }
+
+    function getElementIdForParam(paramName) {
+      const paramMap = {
+        'innerShadowX': 'inner-shadow-x',
+        'innerShadowY': 'inner-shadow-y',
+        'innerShadowBlur': 'inner-shadow-blur',
+        'innerShadowSpread': 'inner-shadow-spread',
+        'innerShadowOpacity': 'inner-shadow-opacity',
+        'strokeAngle': 'stroke-angle',
+        'strokeColor': 'stroke-color',
+        'strokeThickness': 'stroke-thickness',
+        'strokeOpacity': 'stroke-opacity',
+        'highlightStrokeWeight': 'highlight-stroke-weight',
+        'highlightBlur': 'highlight-blur',
+        'reflectionColor': 'reflection-color',
+        'reflectionOpacity': 'reflection-opacity',
+        'tintColor': 'tint-color',
+        'tintOpacity': 'tint-opacity',
+        'tintBlendMode': 'tint-blend-mode'
+      };
+      return paramMap[paramName] || paramName;
+    }
+
     // Draggable input functionality
     function setupDraggableInputs() {
       const draggableInputs = document.querySelectorAll('.draggable-input');
@@ -1005,6 +1049,9 @@
         
         const min = parseFloat(input.dataset.min) || 0;
         const max = parseFloat(input.dataset.max) || 100;
+        
+        // Get parameter name from input ID
+        const parameterName = getParamNameFromElementId(input.id);
         
         // Adjust sensitivity based on range
         const range = max - min;
@@ -1045,7 +1092,7 @@
             const newValue = Math.min(max, Math.max(min, startValue + (deltaX * dragSensitivity)));
             const roundedValue = Math.round(newValue * 10) / 10; // Round to 1 decimal
             input.value = roundedValue % 1 === 0 ? roundedValue.toString() : roundedValue.toFixed(1);
-            handleControlChange();
+            handleControlChange(parameterName);
           }
         }
 
@@ -1070,7 +1117,7 @@
             
             value = Math.min(max, Math.max(min, value));
             input.value = value % 1 === 0 ? value.toString() : value.toFixed(1);
-            handleControlChange();
+            handleControlChange(parameterName);
           }
         });
 
@@ -1090,9 +1137,31 @@
           
           value = Math.min(max, Math.max(min, value));
           input.value = value % 1 === 0 ? value.toString() : value.toFixed(1);
-          handleControlChange();
+          handleControlChange(parameterName);
         });
       });
+    }
+
+    function getParamNameFromElementId(elementId) {
+      const idMap = {
+        'edge': 'edge',
+        'strength': 'strength', 
+        'ca': 'ca',
+        'frost': 'frost',
+        'inner-shadow-x': 'innerShadowX',
+        'inner-shadow-y': 'innerShadowY',
+        'inner-shadow-blur': 'innerShadowBlur',
+        'inner-shadow-spread': 'innerShadowSpread',
+        'inner-shadow-opacity': 'innerShadowOpacity',
+        'stroke-angle': 'strokeAngle',
+        'stroke-thickness': 'strokeThickness',
+        'stroke-opacity': 'strokeOpacity',
+        'highlight-stroke-weight': 'highlightStrokeWeight',
+        'highlight-blur': 'highlightBlur',
+        'reflection-opacity': 'reflectionOpacity',
+        'tint-opacity': 'tintOpacity'
+      };
+      return idMap[elementId] || elementId;
     }
 
     function initializeUI() {
@@ -1161,10 +1230,11 @@
         }
       };
 
-      // Set up color pickers
+      // Set up color pickers with parameter names
       const colorPickers = document.querySelectorAll('input[type="color"]');
       colorPickers.forEach((picker) => {
-        picker.addEventListener('input', handleControlChange);
+        const parameterName = getParamNameFromElementId(picker.id);
+        picker.addEventListener('input', () => handleControlChange(parameterName));
       });
 
       // Set up blend mode dropdown
@@ -1174,7 +1244,7 @@
       });
       
       blendModeSelect.addEventListener('change', () => {
-        handleControlChange();
+        handleControlChange('tintBlendMode');
       });
 
       console.log('UI initialized successfully');

@@ -617,6 +617,26 @@ figma.ui.onmessage = async (msg) => {
       } else {
         console.log('No LG element selected to update');
       }
+    } else if (msg.type === 'update-effects-realtime') {
+      console.log('Real-time effects update:', msg.parameterName, msg.parameterValue);
+      const selection = figma.currentPage.selection;
+      
+      if (selection.length === 0) return;
+      
+      // Find all LG elements in selection (including nested)
+      const lgElements = findLgElementsInSelection(selection);
+      
+      if (lgElements.length === 0) {
+        console.log('No LG elements found in selection for real-time update');
+        return;
+      }
+      
+      // Update only the specific parameter for all LG elements
+      for (const lgElement of lgElements) {
+        await updateSingleEffectParameter(lgElement, msg.parameterName, msg.parameterValue);
+      }
+      
+      console.log(`Updated ${msg.parameterName} for ${lgElements.length} LG elements`);
     } else if (msg.type === 'apply-image-fill') {
       console.log('Applying image fill to node:', msg.nodeId);
       const nodeToFill = await figma.getNodeByIdAsync(msg.nodeId) as FrameNode;
@@ -670,7 +690,7 @@ figma.ui.onmessage = async (msg) => {
           notification.cancel();
           notification = figma.notify(`Updating ${i + 1} of ${lgNodes.length}: ${node.name}`);
           
-          // Use the parameters from the UI
+          // Use the parameters from the UI - this updates refraction parameters only
           await updateLgElement(node, msg.params, 'update');
           await new Promise(resolve => setTimeout(resolve, 100));
         }
@@ -745,6 +765,47 @@ figma.ui.onmessage = async (msg) => {
     figma.notify('An error occurred: ' + (error instanceof Error ? error.message : String(error)), { error: true });
   }
 };
+
+// New function to update a single effect parameter
+async function updateSingleEffectParameter(lgElement: FrameNode, parameterName: string, parameterValue: any) {
+  // Extract current effects parameters
+  const currentEffects = extractEffectsFromLgElement(lgElement);
+  
+  // Update only the specific parameter
+  currentEffects[parameterName as keyof EffectsParams] = parameterValue;
+  
+  // Apply the change to the appropriate layer
+  if (parameterName.startsWith('innerShadow') || parameterName.startsWith('stroke')) {
+    // Update refraction layer
+    const refractionLayer = lgElement.findOne(n => n.name.includes('Refraction'));
+    if (refractionLayer) {
+      refractionLayer.name = formatRefractionLayerName(currentEffects);
+      applyRefractionEffects(refractionLayer, currentEffects);
+    }
+  } else if (parameterName.startsWith('highlight') || parameterName.startsWith('reflection')) {
+    // Update highlight reflection layer
+    const highlightGroup = lgElement.findOne(n => n.name === 'Highlight group') as FrameNode;
+    if (highlightGroup) {
+      const reflection = highlightGroup.findOne(n => n.name.includes('Reflection') || n.name.includes('reflection'));
+      if (reflection) {
+        reflection.name = formatReflectionLayerName(currentEffects);
+        applyReflectionEffects(reflection, currentEffects);
+      }
+    }
+  } else if (parameterName.startsWith('tint')) {
+    // Update tint layer
+    const tintGroup = lgElement.findOne(n => n.name === 'tint group') as FrameNode;
+    if (tintGroup) {
+      const tintLayer = tintGroup.findOne(n => n.name.includes('Tint'));
+      if (tintLayer) {
+        tintLayer.name = formatTintLayerName(currentEffects);
+        applyTintEffects(tintLayer, currentEffects);
+      }
+    }
+  }
+}
+
+// ...existing code...
 
 (async () => {
   console.log('Plugin initializing...');
