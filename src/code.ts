@@ -270,7 +270,7 @@ function applyRefractionEffects(layer: SceneNode, effects: Partial<EffectsParams
   
   // Apply stroke thickness
   layer.strokeWeight = effects.strokeThickness ?? 1;
-  layer.strokeAlign = 'INSIDE';
+  layer.strokeAlign = 'OUTSIDE';
   
   // Apply stroke with gradient
   const strokeColor = hexToRgb(effects.strokeColor ?? '#ffffff');
@@ -300,6 +300,7 @@ function applyReflectionEffects(layer: SceneNode, effects: Partial<EffectsParams
   if (!('effects' in layer) || !('strokeWeight' in layer) || !('strokes' in layer)) return;
   
   layer.strokeWeight = effects.highlightStrokeWeight ?? 12;
+   layer.strokeAlign = 'CENTER';
   
   const blurEffect: Effect = {
     type: 'LAYER_BLUR',

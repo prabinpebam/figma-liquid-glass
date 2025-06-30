@@ -1053,11 +1053,10 @@
         // Get parameter name from input ID
         const parameterName = getParamNameFromElementId(input.id);
         
-        // Adjust sensitivity based on range
+        // Calculate sensitivity based on 40% of screen width for full range
         const range = max - min;
-        if (range <= 50) dragSensitivity = 0.5;
-        else if (range <= 100) dragSensitivity = 1;
-        else dragSensitivity = 2;
+        const targetPixelsForFullRange = window.screen.width * 0.4;
+        dragSensitivity = range / targetPixelsForFullRange;
 
         input.addEventListener('mousedown', (e) => {
           if (e.detail === 1) { // Single click
@@ -1082,7 +1081,7 @@
         function onMouseMove(e) {
           const deltaX = e.clientX - startX;
           
-          if (Math.abs(deltaX) > 3 && !isDragging) {
+          if (Math.abs(deltaX) > 5 && !isDragging) {
             isDragging = true;
             input.classList.add('dragging');
             input.blur(); // Remove focus to prevent text editing
@@ -1090,8 +1089,8 @@
           
           if (isDragging) {
             const newValue = Math.min(max, Math.max(min, startValue + (deltaX * dragSensitivity)));
-            const roundedValue = Math.round(newValue * 10) / 10; // Round to 1 decimal
-            input.value = roundedValue % 1 === 0 ? roundedValue.toString() : roundedValue.toFixed(1);
+            const roundedValue = Math.round(newValue); // Round to whole number only
+            input.value = roundedValue.toString();
             handleControlChange(parameterName);
           }
         }
@@ -1116,7 +1115,7 @@
             if (isNaN(value)) return;
             
             value = Math.min(max, Math.max(min, value));
-            input.value = value % 1 === 0 ? value.toString() : value.toFixed(1);
+            input.value = Math.round(value).toString(); // Round to whole number only
             handleControlChange(parameterName);
           }
         });
@@ -1136,7 +1135,7 @@
           }
           
           value = Math.min(max, Math.max(min, value));
-          input.value = value % 1 === 0 ? value.toString() : value.toFixed(1);
+          input.value = Math.round(value).toString(); // Round to whole number only
           handleControlChange(parameterName);
         });
       });
