@@ -13,39 +13,112 @@
       --primary-color: #0D99FF;
       --primary-color-hover: #3FB1FF;
       --border-color: #3A3A3A;
+      --tab-active-color: #3A3A3A;
+    }
+
+    /* Custom Scrollbar Styles */
+    ::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: var(--border-color);
+      border-radius: 3px;
+      transition: background-color 0.2s ease;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+      background: var(--text-secondary-color);
+    }
+
+    /* Firefox scrollbar */
+    * {
+      scrollbar-width: thin;
+      scrollbar-color: var(--border-color) transparent;
     }
 
     html, body {
       height: 100%;
+      margin: 0;
+      padding: 0;
     }
 
     body {
       background-color: var(--bg-color);
       color: var(--text-color);
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
-      margin: 0;
-      padding: 16px;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
       font-size: 12px;
       display: flex;
       flex-direction: column;
       box-sizing: border-box;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    /* Tab System */
+    .tab-container {
+      display: flex;
+      border-bottom: 1px solid var(--border-color);
+      background: var(--bg-secondary-color);
+    }
+
+    .tab-button {
+      flex: 1;
+      padding: 4px 16px;
+      background: transparent;
+      border: none;
+      color: var(--text-secondary-color);
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 500;
+      transition: all 0.2s ease;
+    }
+
+    .tab-button.active {
+      color: var(--text-color);
+      background: var(--tab-active-color);
+      border-bottom: 2px solid var(--primary-color);
+    }
+
+    .tab-button:hover:not(.active) {
+      color: var(--text-color);
+      background: rgba(255, 255, 255, 0.05);
+    }
+
+    /* Main content area */
+    .main-content {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      padding: 16px;
+      overflow-y: auto;
     }
 
     #output-area {
-      margin: 0;
+      margin: 0 0 16px 0;
       padding: 0;
       border: 1px solid var(--border-color);
       background: var(--bg-secondary-color);
       text-align: center;
       border-radius: 8px;
-      flex-grow: 1; /* Use available space */
+      flex-shrink: 0;
       display: flex;
       align-items: center;
       justify-content: center;
       overflow: hidden;
       min-height: 150px;
+      max-height: 200px;
+      transition: all 0.3s ease;
     }
     
+    #output-area.hidden {
+      display: none;
+    }
+
     #placeholder {
       color: var(--text-secondary-color);      
     }
@@ -53,30 +126,69 @@
     #lg-canvas {
       max-width: 100%;
       max-height: 100%;
-      border-radius: 8px; /* Match parent */
+      border-radius: 8px;
       object-fit: contain;
     }
 
-    #lg-controls {
-      margin-top: 16px;
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
+    /* Tab Content */
+    .tab-content {
+      display: none;
+      flex: 1;
+      overflow-y: auto;
+    }
+
+    .tab-content.active {
+      display: block;
+    }
+
+    /* Controls */
+    .controls-section {
+      margin-bottom: 20px;
+    }
+
+    .section-title {
+      font-weight: 600;
+      margin-bottom: 12px;
+      color: var(--text-color);
+      border-bottom: 1px solid var(--border-color);
+      padding-bottom: 4px;
+    }
+
+    .subsection-title {
+      font-weight: 500;
+      margin: 16px 0 8px 0;
+      color: var(--text-secondary-color);
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
     }
 
     .control-row {
       display: grid;
-      grid-template-columns: 1fr auto; /* Label | Value */
-      grid-template-rows: auto auto; /* Label/Value row | Slider row */
+      grid-template-columns: 1fr auto;
+      grid-template-rows: auto auto;
       grid-template-areas: 
         "label value"
-        "slider slider";
+        "control control";
       align-items: center;
       row-gap: 8px;
+      margin-bottom: 12px;
       color: var(--text-secondary-color);
     }
 
-    .control-row > span { grid-area: label; }
+    .control-row > .label { 
+      grid-area: label; 
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .multiple-values {
+      font-style: italic;
+      font-size: 10px;
+      color: var(--text-secondary-color);
+    }
+
     .control-row > output { 
       grid-area: value; 
       background-color: var(--bg-secondary-color);
@@ -88,7 +200,43 @@
       text-align: center;
       font-variant-numeric: tabular-nums;
     }
-    .control-row > input[type="range"] { grid-area: slider; }
+
+    .control-row > input[type="range"] { 
+      grid-area: control; 
+    }
+
+    .control-row > input[type="color"] { 
+      grid-area: control; 
+      width: 100%;
+      height: 32px;
+      border: 1px solid var(--border-color);
+      border-radius: 4px;
+      background: transparent;
+      cursor: pointer;
+    }
+
+    .control-row > select { 
+      grid-area: control; 
+      width: 100%;
+      padding: 6px 8px;
+      background: var(--bg-secondary-color);
+      color: var(--text-color);
+      border: 1px solid var(--border-color);
+      border-radius: 4px;
+      font-size: 12px;
+      cursor: pointer;
+    }
+
+    .control-row > select option {
+      background: var(--bg-secondary-color);
+      color: var(--text-color);
+    }
+
+    .control-row > select optgroup {
+      background: var(--bg-color);
+      color: var(--text-secondary-color);
+      font-weight: 600;
+    }
 
     /* Slider Styles */
     input[type="range"] {
@@ -102,7 +250,6 @@
       margin: 0;
     }
 
-    /* Thumb styles */
     input[type="range"]::-webkit-slider-thumb {
       -webkit-appearance: none;
       appearance: none;
@@ -129,14 +276,23 @@
     input[type="range"]::-webkit-slider-thumb:hover {
       background-color: var(--primary-color-hover);
     }
+
     input[type="range"]::-moz-range-thumb:hover {
       background-color: var(--primary-color-hover);
+    }
+
+    /* Sticky Footer */
+    .sticky-footer {
+      flex-shrink: 0;
+      padding: 8px 16px;
+      border-top: 1px solid var(--border-color);
+      background: var(--bg-color);
     }
 
     .button-row {
       display: flex;
       gap: 8px;
-      margin-top: 16px;
+      margin-bottom: 10px;
     }
 
     .button {
@@ -166,7 +322,6 @@
     }
 
     footer {
-      margin-top: 16px;
       text-align: center;
       color: var(--text-secondary-color);
       font-size: 11px;
@@ -191,53 +346,172 @@
   </style>
 </head>
 <body>
-  <div id="output-area">
-    <em id="placeholder">      
-        Select or create a Liquid Glass element.
-        <br><br>
-        Plugin needs to be kept open to update the effect.      
-    </em>
-    <canvas id="lg-canvas" width="1" height="1" style="display:none"></canvas>
+  <!-- Tab Navigation -->
+  <div class="tab-container">
+    <button class="tab-button active" data-tab="refraction">Refraction</button>
+    <button class="tab-button" data-tab="effects">Effects</button>
   </div>
 
-  <!-- controls specific to liquid glass -->
-  <div id="lg-controls">
-    <label class="control-row">
-      <span>Edge thickness</span>
-      <output id="edge-value">20</output>
-      <input type="range" id="edge" min="1" max="50" value="20">
-    </label>
-    <label class="control-row">
-      <span>Refraction strength</span>
-      <output id="strength-value">25</output>
-      <input type="range" id="strength" min="1" max="100" value="25">
-    </label>
-    <label class="control-row">
-      <span>Chromatic aberration</span>
-      <output id="ca-value">5</output>
-      <input type="range" id="ca" min="0" max="30" value="5">
-    </label>
-    <label class="control-row">
-      <span>Background blur</span>
-      <output id="frost-value">0</output>
-      <input type="range"id="frost" min="0" max="20" value="0">
-    </label>
+  <!-- Main Content Area -->
+  <div class="main-content">
+    <!-- Output Area - Only shown on Refraction tab -->
+    <div id="output-area">
+      <em id="placeholder">      
+          Select or create a Liquid Glass element.
+          <br><br>
+          Plugin needs to be kept open to update the effect.      
+      </em>
+      <canvas id="lg-canvas" width="1" height="1" style="display:none"></canvas>
+    </div>
+
+    <!-- Refraction Tab -->
+    <div class="tab-content active" id="refraction-tab">
+      <div class="controls-section">
+        <label class="control-row">
+          <span class="label">Edge thickness</span>
+          <output id="edge-value">20</output>
+          <input type="range" id="edge" min="1" max="50" value="20">
+        </label>
+        <label class="control-row">
+          <span class="label">Refraction strength</span>
+          <output id="strength-value">25</output>
+          <input type="range" id="strength" min="1" max="100" value="25">
+        </label>
+        <label class="control-row">
+          <span class="label">Chromatic aberration</span>
+          <output id="ca-value">5</output>
+          <input type="range" id="ca" min="0" max="30" value="5">
+        </label>
+        <label class="control-row">
+          <span class="label">Background blur</span>
+          <output id="frost-value">0</output>
+          <input type="range" id="frost" min="0" max="20" value="0">
+        </label>
+      </div>
+    </div>
+
+    <!-- Effects Tab -->
+    <div class="tab-content" id="effects-tab">
+      <!-- Refraction Layer Section -->
+      <div class="controls-section">
+        <div class="section-title">Refraction Layer</div>
+        
+        <div class="subsection-title">Inner Shadow</div>
+        <label class="control-row">
+          <span class="label">X Offset</span>
+          <output id="inner-shadow-x-value">10</output>
+          <input type="range" id="inner-shadow-x" min="0" max="50" value="10">
+        </label>
+        <label class="control-row">
+          <span class="label">Y Offset</span>
+          <output id="inner-shadow-y-value">10</output>
+          <input type="range" id="inner-shadow-y" min="0" max="50" value="10">
+        </label>
+        <label class="control-row">
+          <span class="label">Blur</span>
+          <output id="inner-shadow-blur-value">10</output>
+          <input type="range" id="inner-shadow-blur" min="0" max="50" value="10">
+        </label>
+        <label class="control-row">
+          <span class="label">Spread</span>
+          <output id="inner-shadow-spread-value">0</output>
+          <input type="range" id="inner-shadow-spread" min="0" max="50" value="0">
+        </label>
+        <label class="control-row">
+          <span class="label">Opacity</span>
+          <output id="inner-shadow-opacity-value">40</output>
+          <input type="range" id="inner-shadow-opacity" min="0" max="100" value="40">
+        </label>
+
+        <div class="subsection-title">Stroke</div>
+        <label class="control-row">
+          <span class="label">Gradient Angle</span>
+          <output id="stroke-angle-value">0</output>
+          <input type="range" id="stroke-angle" min="0" max="360" value="0">
+        </label>
+        <label class="control-row">
+          <span class="label">Color</span>
+          <input type="color" id="stroke-color" value="#ffffff">
+        </label>
+      </div>
+
+      <!-- Highlight Reflection Section -->
+      <div class="controls-section">
+        <div class="section-title">Highlight Reflection</div>
+        
+        <div class="subsection-title">Stroke</div>
+        <label class="control-row">
+          <span class="label">Weight</span>
+          <output id="highlight-stroke-weight-value">12</output>
+          <input type="range" id="highlight-stroke-weight" min="0" max="50" value="12">
+        </label>
+
+        <div class="subsection-title">Effects</div>
+        <label class="control-row">
+          <span class="label">Blur</span>
+          <output id="highlight-blur-value">14</output>
+          <input type="range" id="highlight-blur" min="0" max="50" value="14">
+        </label>
+      </div>
+
+      <!-- Tint Layer Section -->
+      <div class="controls-section">
+        <div class="section-title">Tint Layer</div>
+        
+        <label class="control-row">
+          <span class="label">Tint Color</span>
+          <input type="color" id="tint-color" value="#ffffff">
+        </label>
+        <label class="control-row">
+          <span class="label">Blend Mode</span>
+          <select id="tint-blend-mode">
+            <option value="PASS_THROUGH">Pass through</option>
+            <option value="NORMAL" selected>Normal</option>
+            <option disabled>────────────</option>
+            <option value="DARKEN">Darken</option>
+            <option value="MULTIPLY">Multiply</option>
+            <option value="PLUS_DARKER">Plus darker</option>
+            <option value="COLOR_BURN">Color burn</option>
+            <option disabled>────────────</option>
+            <option value="LIGHTEN">Lighten</option>
+            <option value="SCREEN">Screen</option>
+            <option value="PLUS_LIGHTER">Plus lighter</option>
+            <option value="COLOR_DODGE">Color dodge</option>
+            <option disabled>────────────</option>
+            <option value="OVERLAY">Overlay</option>
+            <option value="SOFT_LIGHT">Soft light</option>
+            <option value="HARD_LIGHT">Hard light</option>
+            <option disabled>────────────</option>
+            <option value="DIFFERENCE">Difference</option>
+            <option value="EXCLUSION">Exclusion</option>
+            <option disabled>────────────</option>
+            <option value="HUE">Hue</option>
+            <option value="SATURATION">Saturation</option>
+            <option value="COLOR">Color</option>
+            <option value="LUMINOSITY">Luminosity</option>
+          </select>
+        </label>
+      </div>
+    </div>
   </div>
 
-  <div class="button-row">
-    <button class="button" id="create-btn">Create New</button>
-    <button class="button" id="update-all-btn">Update all</button>
+  <!-- Sticky Footer -->
+  <div class="sticky-footer">
+    <div class="button-row">
+      <button class="button" id="create-btn">Create New</button>
+      <button class="button" id="update-all-btn">Update all</button>
+    </div>
+
+    <footer>
+      by Prabin Pebam
+      <a href="https://github.com/prabinpebam/figma-liquid-glass" target="_blank">
+        <svg width="12" height="12" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" clip-rule="evenodd" d="M8 0C3.58 0 0 3.58 0 8C0 11.54 2.29 14.53 5.47 15.59C5.87 15.66 6.02 15.42 6.02 15.21C6.02 15.02 6.01 14.49 6.01 13.79C3.92 14.25 3.42 12.86 3.42 12.86C3.06 11.93 2.52 11.69 2.52 11.69C1.81 11.2 2.57 11.2 2.57 11.2C3.35 11.25 3.78 12.01 3.78 12.01C4.48 13.24 5.64 12.88 6.08 12.69C6.15 12.22 6.33 11.9 6.53 11.73C4.75 11.53 2.87 10.89 2.87 7.91C2.87 7.02 3.18 6.29 3.64 5.71C3.57 5.51 3.33 4.79 3.71 3.94C3.71 3.94 4.39 3.72 5.99 4.76C6.63 4.58 7.32 4.49 8 4.49C8.68 4.49 9.37 4.58 10.01 4.76C11.61 3.72 12.29 3.94 12.29 3.94C12.67 4.79 12.43 5.51 12.36 5.71C12.82 6.29 13.13 7.02 13.13 7.91C13.13 10.9 11.24 11.53 9.46 11.73C9.71 11.95 9.99 12.38 9.99 13.01C9.99 13.89 9.98 14.97 9.98 15.21C9.98 15.42 10.13 15.67 10.54 15.59C13.71 14.53 16 11.53 16 8C16 3.58 12.42 0 8 0Z"></path></svg>
+        figma-liquid-glass
+      </a>
+    </footer>
   </div>
 
-  <footer>
-    by Prabin Pebam
-    <a href="https://github.com/prabinpebam/figma-liquid-glass" target="_blank">
-      <svg width="12" height="12" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" clip-rule="evenodd" d="M8 0C3.58 0 0 3.58 0 8C0 11.54 2.29 14.53 5.47 15.59C5.87 15.66 6.02 15.42 6.02 15.21C6.02 15.02 6.01 14.49 6.01 13.79C3.92 14.25 3.42 12.86 3.42 12.86C3.06 11.93 2.52 11.69 2.52 11.69C1.81 11.2 2.57 11.2 2.57 11.2C3.35 11.25 3.78 12.01 3.78 12.01C4.48 13.24 5.64 12.88 6.08 12.69C6.15 12.22 6.33 11.9 6.53 11.73C4.75 11.53 2.87 10.89 2.87 7.91C2.87 7.02 3.18 6.29 3.64 5.71C3.57 5.51 3.33 4.79 3.71 3.94C3.71 3.94 4.39 3.72 5.99 4.76C6.63 4.58 7.32 4.49 8 4.49C8.68 4.49 9.37 4.58 10.01 4.76C11.61 3.72 12.29 3.94 12.29 3.94C12.67 4.79 12.43 5.51 12.36 5.71C12.82 6.29 13.13 7.02 13.13 7.91C13.13 10.9 11.24 11.53 9.46 11.73C9.71 11.95 9.99 12.38 9.99 13.01C9.99 13.89 9.98 14.97 9.98 15.21C9.98 15.42 10.13 15.67 10.54 15.59C13.71 14.53 16 11.53 16 8C16 3.58 12.42 0 8 0Z"></path></svg>
-      figma-liquid-glass
-    </a>
-  </footer>
-
-  <!-- Inline all JavaScript directly -->
+  <!-- JavaScript -->
   <script>
     console.log('Starting UI initialization...');
 
@@ -372,6 +646,38 @@
     let currentShape = null, currentShapeType = 'rectangle';
     let createBtn, updateAllBtn, placeholder;
 
+    // UI State
+    let isMultipleSelection = false;
+    let currentBlendModeOriginal = 'NORMAL';
+
+    // Tab system
+    function initializeTabs() {
+      const tabButtons = document.querySelectorAll('.tab-button');
+      const tabContents = document.querySelectorAll('.tab-content');
+      const outputArea = document.getElementById('output-area');
+
+      tabButtons.forEach(button => {
+        button.addEventListener('click', () => {
+          const targetTab = button.getAttribute('data-tab');
+          
+          // Update button states
+          tabButtons.forEach(btn => btn.classList.remove('active'));
+          button.classList.add('active');
+          
+          // Update content states
+          tabContents.forEach(content => content.classList.remove('active'));
+          document.getElementById(targetTab + '-tab').classList.add('active');
+          
+          // Show/hide output area based on active tab
+          if (targetTab === 'refraction') {
+            outputArea.classList.remove('hidden');
+          } else {
+            outputArea.classList.add('hidden');
+          }
+        });
+      });
+    }
+
     function initGL() {
       const vs = compile(gl, vertexShaderSource, gl.VERTEX_SHADER);
       const fs = compile(gl, fragmentShaderSource, gl.FRAGMENT_SHADER);
@@ -424,14 +730,37 @@
       if (output) output.textContent = slider.value;
     }
 
-    function handleSliderChange() {
+    function getAllParams() {
+      return {
+        // Refraction params
+        edge: +document.getElementById('edge').value,
+        strength: +document.getElementById('strength').value,
+        ca: +document.getElementById('ca').value,
+        frost: +document.getElementById('frost').value,
+        
+        // Effects params
+        innerShadowX: +document.getElementById('inner-shadow-x').value,
+        innerShadowY: +document.getElementById('inner-shadow-y').value,
+        innerShadowBlur: +document.getElementById('inner-shadow-blur').value,
+        innerShadowSpread: +document.getElementById('inner-shadow-spread').value,
+        innerShadowOpacity: +document.getElementById('inner-shadow-opacity').value,
+        strokeAngle: +document.getElementById('stroke-angle').value,
+        strokeColor: document.getElementById('stroke-color').value,
+        highlightStrokeWeight: +document.getElementById('highlight-stroke-weight').value,
+        highlightBlur: +document.getElementById('highlight-blur').value,
+        tintColor: document.getElementById('tint-color').value,
+        tintBlendMode: document.getElementById('tint-blend-mode').value,
+      };
+    }
+
+    function handleControlChange() {
+      if (isMultipleSelection) {
+        // Don't update in real-time for multiple selection
+        return;
+      }
+      
       if (createBtn.disabled) {
-        const params = {
-          edge: +document.getElementById('edge').value,
-          strength: +document.getElementById('strength').value,
-          ca: +document.getElementById('ca').value,
-          frost: +document.getElementById('frost').value,
-        };
+        const params = getAllParams();
         send('update-lg-element', { params });
       }
     }
@@ -472,35 +801,27 @@
     }
 
     function generateSDFFromSVG(svgData, width, height) {
-      // For now, return a simple fallback that treats complex shapes as rectangles
-      // This avoids the CORS taint issue while still providing functionality
       return new Promise((resolve) => {
         const canvas = document.createElement('canvas');
         canvas.width = width;
         canvas.height = height;
         const ctx = canvas.getContext('2d');
         
-        // Create a simple SDF-like texture - just use alpha channel for now
         const imageData = ctx.createImageData(width, height);
         const data = imageData.data;
         
-        // Simple fallback: create a rectangular SDF
         for (let y = 0; y < height; y++) {
           for (let x = 0; x < width; x++) {
             const i = (y * width + x) * 4;
-            
-            // Calculate distance to edge (simplified)
             const dx = Math.min(x, width - x);
             const dy = Math.min(y, height - y);
             const dist = Math.min(dx, dy);
-            
-            // Normalize to 0-255 range
             const normalizedDist = Math.min(255, dist * 2);
             
-            data[i] = normalizedDist;     // R
-            data[i + 1] = normalizedDist; // G
-            data[i + 2] = normalizedDist; // B
-            data[i + 3] = 255;            // A
+            data[i] = normalizedDist;
+            data[i + 1] = normalizedDist;
+            data[i + 2] = normalizedDist;
+            data[i + 3] = 255;
           }
         }
         
@@ -542,15 +863,13 @@
         return;
       }
 
+      // Initialize tabs
+      initializeTabs();
+
       // Set up event listeners
       createBtn.onclick = () => {
         console.log('Create button clicked');
-        const params = {
-          edge: +document.getElementById('edge').value,
-          strength: +document.getElementById('strength').value,
-          ca: +document.getElementById('ca').value,
-          frost: +document.getElementById('frost').value,
-        };
+        const params = getAllParams();
         
         console.log('Button clicked:', createBtn.textContent, params);
         
@@ -566,20 +885,50 @@
       updateAllBtn.onclick = () => {
         console.log('Update button clicked');
         if (updateAllBtn.textContent === 'Update selection') {
-          send('update-selection-lg-elements', {});
+          const params = getAllParams();
+          send('update-selection-lg-elements', { params });
         } else {
           send('update-all-lg-elements', {});
         }
       };
 
-      // Set up sliders
+      // Set up sliders and controls
       const sliders = document.querySelectorAll('input[type="range"]');
       console.log('Found sliders:', sliders.length);
       sliders.forEach((slider) => {
         updateValueDisplay(slider);
         slider.addEventListener('input', () => {
           updateValueDisplay(slider);
-          handleSliderChange();
+          handleControlChange();
+        });
+      });
+
+      // Set up color pickers
+      const colorPickers = document.querySelectorAll('input[type="color"]');
+      colorPickers.forEach((picker) => {
+        picker.addEventListener('input', handleControlChange);
+      });
+
+      // Set up blend mode dropdown with preview
+      const blendModeSelect = document.getElementById('tint-blend-mode');
+      blendModeSelect.addEventListener('mouseenter', () => {
+        currentBlendModeOriginal = blendModeSelect.value;
+      });
+      
+      blendModeSelect.addEventListener('change', () => {
+        handleControlChange();
+      });
+
+      // Blend mode hover preview (future enhancement)
+      const blendModeOptions = blendModeSelect.querySelectorAll('option:not([disabled])');
+      blendModeOptions.forEach((option) => {
+        option.addEventListener('mouseenter', () => {
+          if (!isMultipleSelection && createBtn.disabled) {
+            // Preview blend mode
+            const previewParams = getAllParams();
+            previewParams.tintBlendMode = option.value;
+            send('preview-effects', { params: previewParams });
+          }
         });
       });
       
@@ -617,46 +966,87 @@
       }
 
       if (msg.type === 'update-ui-controls') {
+        isMultipleSelection = msg.isMultipleSelection || false;
         createBtn.disabled = msg.isSelected;
         createBtn.textContent = 'Create New';
-        updateAllBtn.textContent = 'Update selection'; // Always show "Update selection" when any LG element is selected
-        document.getElementById('edge').value = msg.params.edge;
-        document.getElementById('strength').value = msg.params.strength;
-        document.getElementById('ca').value = msg.params.ca;
-        document.getElementById('frost').value = msg.params.frost;
+        updateAllBtn.textContent = 'Update selection';
         
+        // Update refraction params
+        document.getElementById('edge').value = msg.params.edge || 20;
+        document.getElementById('strength').value = msg.params.strength || 25;
+        document.getElementById('ca').value = msg.params.ca || 5;
+        document.getElementById('frost').value = msg.params.frost || 0;
+        
+        // Update effects params
+        if (msg.effectsParams) {
+          const ep = msg.effectsParams;
+          document.getElementById('inner-shadow-x').value = ep.innerShadowX || 10;
+          document.getElementById('inner-shadow-y').value = ep.innerShadowY || 10;
+          document.getElementById('inner-shadow-blur').value = ep.innerShadowBlur || 10;
+          document.getElementById('inner-shadow-spread').value = ep.innerShadowSpread || 0;
+          document.getElementById('inner-shadow-opacity').value = ep.innerShadowOpacity || 40;
+          document.getElementById('stroke-angle').value = ep.strokeAngle || 0;
+          document.getElementById('stroke-color').value = ep.strokeColor || '#ffffff';
+          document.getElementById('highlight-stroke-weight').value = ep.highlightStrokeWeight || 12;
+          document.getElementById('highlight-blur').value = ep.highlightBlur || 14;
+          document.getElementById('tint-color').value = ep.tintColor || '#ffffff';
+          document.getElementById('tint-blend-mode').value = ep.tintBlendMode || 'NORMAL';
+        }
+        
+        // Update all value displays
         document.querySelectorAll('input[type="range"]').forEach((slider) => {
           updateValueDisplay(slider);
         });
         
-        if (msg.isSelected) {
-          send('update-lg-element', { params: msg.params });
+        // Show "Multiple values" indicators if needed
+        if (isMultipleSelection) {
+          document.querySelectorAll('.label').forEach(label => {
+            if (!label.querySelector('.multiple-values')) {
+              const span = document.createElement('span');
+              span.className = 'multiple-values';
+              span.textContent = 'Multiple values';
+              label.appendChild(span);
+            }
+          });
+        } else {
+          document.querySelectorAll('.multiple-values').forEach(span => span.remove());
+        }
+        
+        if (msg.isSelected && !isMultipleSelection) {
+          send('update-lg-element', { params: getAllParams() });
         }
         return;
       }
 
       if (msg.type === 'selection-changed') {
+        isMultipleSelection = msg.isMultipleSelection || false;
+        
         if (msg.canApplyEffect) {
           createBtn.textContent = 'Apply Effect';
           createBtn.disabled = false;
-          updateAllBtn.textContent = 'Update selection'; // Show "Update selection" for any selection
+          updateAllBtn.textContent = 'Update selection';
         } else if (msg.isLgElement) {
           createBtn.textContent = 'Create New';
           createBtn.disabled = true;
-          updateAllBtn.textContent = 'Update selection'; // Show "Update selection" when LG element is selected
+          updateAllBtn.textContent = 'Update selection';
         } else {
           createBtn.textContent = 'Create New';
           createBtn.disabled = false;
-          updateAllBtn.textContent = 'Update selection'; // Show "Update selection" for any selection
+          updateAllBtn.textContent = 'Update selection';
         }
         return;
       }
 
       if (msg.type === 'selection-cleared') {
+        isMultipleSelection = false;
         createBtn.disabled = false;
         createBtn.textContent = 'Create New';
-        updateAllBtn.textContent = 'Update all'; // Only show "Update all" when nothing is selected
+        updateAllBtn.textContent = 'Update all';
         canvas.style.display = 'none';
+        
+        // Remove multiple values indicators
+        document.querySelectorAll('.multiple-values').forEach(span => span.remove());
+        
         if (!document.getElementById('placeholder')) {
           const newPlaceholder = document.createElement('em');
           newPlaceholder.id = 'placeholder';
@@ -675,8 +1065,6 @@
       if (msg.shape) {
         document.getElementById('placeholder')?.remove();
         currentShape = msg.shape;
-        // For complex shapes, treat them as rectangles in the shader for now
-        // This avoids CORS issues while still providing a working effect
         currentShapeType = msg.shapeType === 'complex' ? 'rectangle' : msg.shapeType;
         
         const img = new Image();
@@ -694,9 +1082,6 @@
           gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
           gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
           gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, img);
-
-          // Skip SDF texture generation for complex shapes to avoid CORS issues
-          // The effect will still work, just using rectangular bounds
 
           gl.uniform2f(uniforms.resolution, canvas.width, canvas.height);
           gl.uniform1i(uniforms.backgroundTexture, 0);

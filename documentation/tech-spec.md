@@ -292,4 +292,74 @@ LG element are meant to be dragged and resized as a whole at the LG element leve
 - Change in corner radius, position and size of LG element layer will update strictly only and only the "Refraction layer" background image through the plugin. No other Figma parameter will be changed.
     - The corner radius of the LG element is taken from the Corner radius of parent LG element with the name "[LG - ET10 RS25 CA5 BB1.0]"
     - Every time the LG element is updated as a whole, the corner radius of the "Refraction layer" and "Highlight layer" should be made exactly the same as the LG element parent layer.
-- Changing the value of the slider will immediately update the image of the "Refraction layer" in realtime as per the parameter and update the LG element layer name to reflect the new parameters. 
+- Changing the value of the slider will immediately update the image of the "Refraction layer" in realtime as per the parameter and update the LG element layer name to reflect the new parameters.
+
+
+
+# Effects UI in the plugin panel
+We need to add the following UI controls to control various properties of specific layers in the LG element(s). Use the same UI controls and theme that's already there.
+- We will have 2 tabs.
+- The 2 CTA bottons and credit will all be part of a sticky footer.
+- 1st tab is "Refraction"
+    - This contains all the current refraction parameters
+- 2nd tabs is called "Effects" and has all the following controls
+    - Refraction layer (Encode the layer name to say [Refraction: "encoded string"] which captures the settings below completely and concisely)
+        - Inner shadow
+            - x (slider from 0 to 50px)
+            - y (slider from 0 to 50px)
+            - Blur (slider from 0 to 50px)
+            - Spread (slider from 0 to 50px)
+            - Color is fixed to black, no ui control for this parameter
+            - Opacity (slider from 0 to 100%)
+        - Stroke
+            - Overall angle of the angular gradient (slider from 0 to 360 degrees)
+            - Only one color can be chosen which will be the same color for all stops (Color picker, updates realtime as color is picked inside the colorpicker)
+    - Highlight reflection (Encode the layer name to say [Reflection: "encoded string"] which captures the settings below completely and concisely)
+        - Stroke
+            - weight (slider from 0 to 50px)
+        - Effects
+            - Blur (slider from 0 to 50px)
+    - Tint layer (Encode the layer name to say [Tint layer: "encoded string"] which captures the settings below completely and concisely)
+        - Tint color (Color picker, updates realtime as color is picked inside the colorpicker)
+        - blending mode (Dropdown with list of all blending modes supported in Figma, hovering on each of the option should immediately update the effect as preview. If nothing is clicked explicitly as selection from the dropdown, the blending mode value is reverted back to the one that was selected while opening the dropdown.)
+            - Pass through
+            - Normal
+            ---- Separator ----
+            - Darken
+            - Multiply
+            - Plus darker
+            - Color burn
+            ---- Separator ----
+            - Lighten
+            - Screen
+            - Plus lighter
+            - Color dodge
+            ---- Separator ----
+            - Overlay
+            - Soft light
+            - Hard light
+            ---- Separator ----
+            - Difference
+            - Exclusion
+            ---- Separator ----
+            - Hue
+            - Saturation
+            - Color
+            - Luminosity
+
+## More functionality detail
+- changing any value or slider change immediately updates the selection in case there is a single direct LG element selection
+- For multiple LG elements, User has to click "Update selection"
+- Update the layer name in realtime every time the parameters are changed.
+- The parameters in the layer name are now to be considered and loaded in the plugin UI the moment an LG element is selected.
+- In case of multi select, we add an italics text after the label saying "Multiple values"
+
+The name of the Liquid glass element frame layer should be constrcuted in the following manner
+[LG - ET10 RS25 CA5 BB1.0]
+LG = Liquid glass
+ET10 = Edge thickness: 10
+RS25 = Refraction Strength: 25
+CA5 = Chromatic abberation: 5
+BB1.0 = Background blur: 1.0
+
+Use similar logic for encoding and readign back layer properties
