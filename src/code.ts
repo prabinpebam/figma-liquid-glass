@@ -1,5 +1,5 @@
 // Show the UI using the HTML content from manifest.json
-figma.showUI(__html__, { width: 320, height: 600 });
+figma.showUI(__html__, { width: 300, height: 600 });
 
 const OFFSET = 20;
 
@@ -38,9 +38,14 @@ interface EffectsParams {
   innerShadowOpacity: number;
   strokeAngle: number;
   strokeColor: string;
+  strokeThickness: number; // NEW: Stroke thickness for refraction layer
+  strokeOpacity: number; // Edge highlight opacity
   highlightStrokeWeight: number;
   highlightBlur: number;
+  reflectionColor: string; // Reflection color
+  reflectionOpacity: number; // Reflection opacity
   tintColor: string;
+  tintOpacity: number; // Tint opacity
   tintBlendMode: string;
 }
 
@@ -122,11 +127,13 @@ function parseRefractionLayerName(name: string): Partial<EffectsParams> | null {
       effects.innerShadowOpacity = parseFloat(isMatch[5]);
     }
     
-    // Parse stroke: ST{angle},{color}
-    const stMatch = paramStr.match(/ST([0-9.]+),([A-Fa-f0-9]{6})/);
+    // Parse stroke: ST{angle},{color},{thickness},{opacity}
+    const stMatch = paramStr.match(/ST([0-9.]+),([A-Fa-f0-9]{6}),([0-9.]+),([0-9.]+)/);
     if (stMatch) {
       effects.strokeAngle = parseFloat(stMatch[1]);
       effects.strokeColor = `#${stMatch[2]}`;
+      effects.strokeThickness = parseFloat(stMatch[3]);
+      effects.strokeOpacity = parseFloat(stMatch[4]);
     }
     
     return effects;
@@ -155,6 +162,18 @@ function parseReflectionLayerName(name: string): Partial<EffectsParams> | null {
       effects.highlightBlur = parseFloat(blMatch[1]);
     }
     
+    // Parse color: C{color}
+    const cMatch = paramStr.match(/C([A-Fa-f0-9]{6})/);
+    if (cMatch) {
+      effects.reflectionColor = `#${cMatch[1]}`;
+    }
+    
+    // Parse opacity: O{opacity}
+    const oMatch = paramStr.match(/O([0-9.]+)/);
+    if (oMatch) {
+      effects.reflectionOpacity = parseFloat(oMatch[1]);
+    }
+    
     return effects;
   } catch (e) {
     return null;
@@ -173,6 +192,12 @@ function parseTintLayerName(name: string): Partial<EffectsParams> | null {
     const cMatch = paramStr.match(/C([A-Fa-f0-9]{6})/);
     if (cMatch) {
       effects.tintColor = `#${cMatch[1]}`;
+    }
+    
+    // Parse opacity: O{opacity}
+    const oMatch = paramStr.match(/O([0-9.]+)/);
+    if (oMatch) {
+      effects.tintOpacity = parseFloat(oMatch[1]);
     }
     
     // Parse blend mode: BM{mode}
@@ -204,27 +229,32 @@ function formatRefractionLayerName(effects: Partial<EffectsParams>): string {
   const opacity = effects.innerShadowOpacity ?? 40;
   const angle = effects.strokeAngle ?? 0;
   const color = (effects.strokeColor ?? '#ffffff').replace('#', '');
+  const thickness = effects.strokeThickness ?? 1;
+  const strokeOpacity = effects.strokeOpacity ?? 100;
   
-  return `[Refraction: IS${x},${y},${blur},${spread},${opacity} ST${angle},${color}]`;
+  return `[Refraction: IS${x},${y},${blur},${spread},${opacity} ST${angle},${color},${thickness},${strokeOpacity}]`;
 }
 
 function formatReflectionLayerName(effects: Partial<EffectsParams>): string {
   const weight = effects.highlightStrokeWeight ?? 12;
   const blur = effects.highlightBlur ?? 14;
+  const color = (effects.reflectionColor ?? '#ffffff').replace('#', '');
+  const opacity = effects.reflectionOpacity ?? 100;
   
-  return `[Reflection: SW${weight} BL${blur}]`;
+  return `[Reflection: SW${weight} BL${blur} C${color} O${opacity}]`;
 }
 
 function formatTintLayerName(effects: Partial<EffectsParams>): string {
   const color = (effects.tintColor ?? '#ffffff').replace('#', '');
+  const opacity = effects.tintOpacity ?? 20;
   const blendMode = effects.tintBlendMode ?? 'NORMAL';
   
-  return `[Tint: C${color} BM${blendMode}]`;
+  return `[Tint: C${color} O${opacity} BM${blendMode}]`;
 }
 
 // Apply effects to layers
 function applyRefractionEffects(layer: SceneNode, effects: Partial<EffectsParams>): void {
-  if (!('effects' in layer) || !('strokes' in layer)) return;
+  if (!('effects' in layer) || !('strokes' in layer) || !('strokeWeight' in layer)) return;
   
   const innerShadowEffect: Effect = {
     type: 'INNER_SHADOW',
@@ -238,8 +268,13 @@ function applyRefractionEffects(layer: SceneNode, effects: Partial<EffectsParams
   
   layer.effects = [innerShadowEffect];
   
+  // Apply stroke thickness
+  layer.strokeWeight = effects.strokeThickness ?? 1;
+  layer.strokeAlign = 'INSIDE';
+  
   // Apply stroke with gradient
   const strokeColor = hexToRgb(effects.strokeColor ?? '#ffffff');
+  const strokeOpacity = (effects.strokeOpacity ?? 100) / 100;
   const angle = (effects.strokeAngle ?? 0) * Math.PI / 180;
   
   // Create rotation matrix for gradient
@@ -251,12 +286,12 @@ function applyRefractionEffects(layer: SceneNode, effects: Partial<EffectsParams
     type: 'GRADIENT_ANGULAR',
     gradientTransform,
     gradientStops: [
-      { position: 0.12, color: { ...strokeColor, a: 1.0 } },
-      { position: 0.28, color: { ...strokeColor, a: 0.4 } },
-      { position: 0.36, color: { ...strokeColor, a: 0.4 } },
-      { position: 0.64, color: { ...strokeColor, a: 1.0 } },
-      { position: 0.78, color: { ...strokeColor, a: 0.4 } },
-      { position: 0.89, color: { ...strokeColor, a: 0.4 } },
+      { position: 0.12, color: { ...strokeColor, a: strokeOpacity } },
+      { position: 0.28, color: { ...strokeColor, a: strokeOpacity * 0.4 } },
+      { position: 0.36, color: { ...strokeColor, a: strokeOpacity * 0.4 } },
+      { position: 0.64, color: { ...strokeColor, a: strokeOpacity } },
+      { position: 0.78, color: { ...strokeColor, a: strokeOpacity * 0.4 } },
+      { position: 0.89, color: { ...strokeColor, a: strokeOpacity * 0.4 } },
     ],
   }];
 }
@@ -275,16 +310,18 @@ function applyReflectionEffects(layer: SceneNode, effects: Partial<EffectsParams
   
   layer.effects = [blurEffect];
   
-  // Apply highlight stroke (same as refraction but with different opacity pattern)
-  const strokeColor = { r: 1, g: 1, b: 1 }; // Always white for highlights
+  // Apply highlight stroke with configurable color and opacity
+  const strokeColor = hexToRgb(effects.reflectionColor ?? '#ffffff');
+  const strokeOpacity = (effects.reflectionOpacity ?? 100) / 100;
+  
   layer.strokes = [{
     type: 'GRADIENT_ANGULAR',
     gradientTransform: [[1, 0, 0], [0, 1, 0]],
     gradientStops: [
-      { position: 0.12, color: { ...strokeColor, a: 1.0 } },
+      { position: 0.12, color: { ...strokeColor, a: strokeOpacity } },
       { position: 0.28, color: { ...strokeColor, a: 0.0 } },
       { position: 0.36, color: { ...strokeColor, a: 0.0 } },
-      { position: 0.64, color: { ...strokeColor, a: 1.0 } },
+      { position: 0.64, color: { ...strokeColor, a: strokeOpacity } },
       { position: 0.78, color: { ...strokeColor, a: 0.0 } },
       { position: 0.89, color: { ...strokeColor, a: 0.0 } },
     ],
@@ -295,10 +332,12 @@ function applyTintEffects(layer: SceneNode, effects: Partial<EffectsParams>): vo
   if (!('fills' in layer) || !('blendMode' in layer)) return;
   
   const tintColor = hexToRgb(effects.tintColor ?? '#ffffff');
+  const tintOpacity = (effects.tintOpacity ?? 20) / 100;
+  
   layer.fills = [{ 
     type: 'SOLID', 
     color: tintColor, 
-    opacity: 0.2 
+    opacity: tintOpacity
   }];
   
   const blendMode = BLEND_MODE_MAP[effects.tintBlendMode ?? 'NORMAL'] || 'NORMAL';
@@ -517,9 +556,10 @@ async function onSelectionChange() {
       const defaultParams = { edge: 20, strength: 25, ca: 5, frost: 0 };
       const defaultEffects = {
         innerShadowX: 10, innerShadowY: 10, innerShadowBlur: 10, innerShadowSpread: 0, innerShadowOpacity: 40,
-        strokeAngle: 0, strokeColor: '#ffffff',
+        strokeAngle: 0, strokeColor: '#ffffff', strokeThickness: 1, strokeOpacity: 100,
         highlightStrokeWeight: 12, highlightBlur: 14,
-        tintColor: '#ffffff', tintBlendMode: 'NORMAL'
+        reflectionColor: '#ffffff', reflectionOpacity: 100,
+        tintColor: '#ffffff', tintOpacity: 20, tintBlendMode: 'NORMAL'
       };
       
       figma.ui.postMessage({ 
@@ -755,11 +795,9 @@ async function createLgElement(params: AllParams) {
   refractionLayer.constraints = { horizontal: 'SCALE', vertical: 'SCALE' };
   refractionLayer.resize(200, 100);
   refractionLayer.cornerRadius = 50;
-  refractionLayer.strokeWeight = 1;
-  refractionLayer.strokeAlign = 'INSIDE';
   mainFrame.appendChild(refractionLayer);
   
-  // Apply refraction effects
+  // Apply refraction effects (including stroke thickness)
   applyRefractionEffects(refractionLayer, params);
 
   // 2. Tint group
