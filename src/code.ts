@@ -277,10 +277,11 @@ function applyRefractionEffects(layer: SceneNode, effects: Partial<EffectsParams
   const strokeOpacity = (effects.strokeOpacity ?? 100) / 100;
   const angle = (effects.strokeAngle ?? 0) * Math.PI / 180;
   
-  // Create rotation matrix for gradient
+  // Create rotation matrix for gradient - FIX: Center the gradient properly
   const cos = Math.cos(angle);
   const sin = Math.sin(angle);
-  const gradientTransform: Transform = [[cos, -sin, 0.5], [sin, cos, 0.5]];
+  // The gradient transform should center the gradient at 0.5, 0.5 and apply rotation
+  const gradientTransform: Transform = [[cos, -sin, 0.5 - 0.5 * cos + 0.5 * sin], [sin, cos, 0.5 - 0.5 * sin - 0.5 * cos]];
   
   layer.strokes = [{
     type: 'GRADIENT_ANGULAR',
@@ -380,7 +381,7 @@ function extractEffectsFromLgElement(lgElement: FrameNode): Partial<EffectsParam
 }
 
 // Enhanced update function
-async function updateLgElement(node: FrameNode, params: AllParams, context: 'create' | 'update') {
+async function updateLgElement(node: FrameNode, params: AllParams, context: 'create' | 'update' | 'effects-only') {
   const refractionLayer = node.findOne(n => n.name.includes('Refraction'));
   if (!refractionLayer) return;
 
@@ -514,7 +515,7 @@ async function updateLgElement(node: FrameNode, params: AllParams, context: 'cre
   // Update main frame name with refraction params only
   node.name = formatLayerName(params);
   
-  // Only capture and send if this is an update context (property changes)
+  // Only capture and send if this is an update context that needs image capture (not effects-only)
   if (context === 'update') {
     await captureAndSend(node, params, node.id);
   }
@@ -615,6 +616,13 @@ figma.ui.onmessage = async (msg) => {
       console.log('Updating LG element');
       if (editState.node) {
         await updateLgElement(editState.node, msg.params, 'update');
+      } else {
+        console.log('No LG element selected to update');
+      }
+    } else if (msg.type === 'update-lg-element-effects-only') {
+      console.log('Updating LG element effects only');
+      if (editState.node) {
+        await updateLgElement(editState.node, msg.params, 'effects-only');
       } else {
         console.log('No LG element selected to update');
       }
@@ -805,8 +813,6 @@ async function updateSingleEffectParameter(lgElement: FrameNode, parameterName: 
     }
   }
 }
-
-// ...existing code...
 
 (async () => {
   console.log('Plugin initializing...');

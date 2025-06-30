@@ -982,17 +982,25 @@
     }
 
     function handleControlChange(parameterName = null) {
-      // For single LG element selection - update everything in real-time
+      // Determine if we're updating refraction or effects parameters
+      const isRefractionParam = ['edge', 'strength', 'ca', 'frost'].includes(parameterName);
+      const isEffectsParam = parameterName && !isRefractionParam;
+      
+      // For single LG element selection - update with optimization
       if (createBtn.disabled && !isMultipleSelection) {
         const params = getAllParams();
-        send('update-lg-element', { params });
+        
+        // Skip image capture for effects-only updates
+        if (isEffectsParam) {
+          send('update-lg-element-effects-only', { params, parameterName });
+        } else {
+          send('update-lg-element', { params });
+        }
         return;
       }
       
       // For multiple selection - only update effects parameters in real-time
       if (isMultipleSelection && parameterName) {
-        const isEffectsParam = !['edge', 'strength', 'ca', 'frost'].includes(parameterName);
-        
         if (isEffectsParam) {
           // Send real-time update for effects parameters only
           const singleParam = {};
