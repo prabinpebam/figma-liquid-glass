@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Liquid Glass</title>
+  <link rel="stylesheet" href="styles/main.css">
+</head>
+<body>
+  <!-- Tab Navigation -->
+  <div class="tab-container">
+    <button class="tab-button active" data-tab="refraction">Refraction</button>
+    <button class="tab-button" data-tab="effects">Effects</button>
+  </div>
+
+  <!-- Main Content Area -->
+  <div class="main-content">
+    <!-- Output Area - Only shown on Refraction tab -->
+    <div id="output-area">
+      <em id="placeholder">      
+          Select or create a Liquid Glass element.
+          <br><br>
+          Plugin needs to be kept open to update the effect.      
+      </em>
+      <canvas id="lg-canvas" width="1" height="1" style="display:none"></canvas>
+    </div>
+
+    <!-- Refraction Tab -->
+    <div class="tab-content active" id="refraction-tab">
+      <div class="controls-section">
+        <div class="section-title">Refraction</div>
+        
+        <div class="control-grid">
+          <div class="control-cell">
+            <span class="control-label">Thickness</span>
+            <input type="text" class="draggable-input" id="edge" value="20" data-min="1" data-max="50">
+          </div>
+          <div class="control-cell">
+            <span class="control-label">Strength</span>
+            <input type="text" class="draggable-input" id="strength" value="25" data-min="1" data-max="100">
+          </div>
+        </div>
+        
+        <div class="control-grid">
+          <div class="control-cell">
+            <span class="control-label">Aberration</span>
+            <input type="text" class="draggable-input" id="ca" value="5" data-min="0" data-max="30">
+          </div>
+          <div class="control-cell">
+            <span class="control-label">Blur</span>
+            <input type="text" class="draggable-input" id="frost" value="0" data-min="0" data-max="20">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Effects Tab -->
+    <div class="tab-content" id="effects-tab">
+      <!-- Inner Shadow Section -->
+      <div class="controls-section">
+        <div class="section-title">Inner shadow</div>
+        
+        <div class="control-grid">
+          <div class="control-cell">
+            <span class="control-label">X offset</span>
+            <input type="text" class="draggable-input" id="inner-shadow-x" value="10" data-min="0" data-max="50">
+          </div>
+          <div class="control-cell">
+            <span class="control-label">Y offset</span>
+            <input type="text" class="draggable-input" id="inner-shadow-y" value="10" data-min="0" data-max="50">
+          </div>
+        </div>
+        
+        <div class="control-grid">
+          <div class="control-cell">
+            <span class="control-label">Blur</span>
+            <input type="text" class="draggable-input" id="inner-shadow-blur" value="10" data-min="0" data-max="50">
+          </div>
+          <div class="control-cell">
+            <span class="control-label">Spread</span>
+            <input type="text" class="draggable-input" id="inner-shadow-spread" value="0" data-min="0" data-max="50">
+          </div>
+        </div>
+        
+        <div class="control-grid">
+          <div class="control-cell">
+            <span class="control-label">Opacity</span>
+            <input type="text" class="draggable-input" id="inner-shadow-opacity" value="40" data-min="0" data-max="100">
+          </div>
+          <div class="control-cell empty"></div>
+        </div>
+      </div>
+
+      <!-- Edge Highlight Section -->
+      <div class="controls-section">
+        <div class="section-title">Edge highlight</div>
+        
+        <div class="control-grid">
+          <div class="control-cell">
+            <span class="control-label">Angle</span>
+            <input type="text" class="draggable-input" id="stroke-angle" value="0" data-min="0" data-max="360">
+          </div>
+          <div class="control-cell">
+            <span class="control-label">Thickness</span>
+            <input type="text" class="draggable-input" id="stroke-thickness" value="1" data-min="0" data-max="10">
+          </div>
+        </div>
+        
+        <div class="control-grid">
+          <div class="control-cell">
+            <span class="control-label">Color</span>
+            <input type="color" class="color-input" id="stroke-color" value="#ffffff">
+          </div>
+          <div class="control-cell">
+            <span class="control-label">Opacity</span>
+            <input type="text" class="draggable-input" id="stroke-opacity" value="100" data-min="0" data-max="100">
+          </div>
+        </div>
+      </div>
+
+      <!-- Reflection Section -->
+      <div class="controls-section">
+        <div class="section-title">Reflection</div>
+        
+        <div class="control-grid">
+          <div class="control-cell">
+            <span class="control-label">Thickness</span>
+            <input type="text" class="draggable-input" id="highlight-stroke-weight" value="12" data-min="0" data-max="50">
+          </div>
+          <div class="control-cell">
+            <span class="control-label">Blur</span>
+            <input type="text" class="draggable-input" id="highlight-blur" value="14" data-min="0" data-max="50">
+          </div>
+        </div>
+        
+        <div class="control-grid">
+          <div class="control-cell">
+            <span class="control-label">Color</span>
+            <input type="color" class="color-input" id="reflection-color" value="#ffffff">
+          </div>
+          <div class="control-cell">
+            <span class="control-label">Opacity</span>
+            <input type="text" class="draggable-input" id="reflection-opacity" value="100" data-min="0" data-max="100">
+          </div>
+        </div>
+      </div>
+
+      <!-- Tint Section -->
+      <div class="controls-section">
+        <div class="section-title">Tint</div>
+        
+        <div class="control-grid">
+          <div class="control-cell">
+            <span class="control-label">Color</span>
+            <input type="color" class="color-input" id="tint-color" value="#ffffff">
+          </div>
+          <div class="control-cell">
+            <span class="control-label">Opacity</span>
+            <input type="text" class="draggable-input" id="tint-opacity" value="20" data-min="0" data-max="100">
+          </div>
+        </div>
+        
+        <div class="control-full-width">
+          <span class="control-label">Blend mode</span>
+          <div class="custom-dropdown" id="tint-blend-mode-dropdown">
+            <div class="dropdown-selected" id="blend-mode-selected">
+              <span id="blend-mode-text">Normal</span>
+              <div class="dropdown-arrow"></div>
+            </div>
+            <div class="dropdown-options" id="blend-mode-options">
+              <div class="dropdown-option" data-value="PASS_THROUGH">Pass through</div>
+              <div class="dropdown-option selected" data-value="NORMAL">Normal</div>
+              <div class="dropdown-option separator">────────────</div>
+              <div class="dropdown-option" data-value="DARKEN">Darken</div>
+              <div class="dropdown-option" data-value="MULTIPLY">Multiply</div>
+              <div class="dropdown-option" data-value="PLUS_DARKER">Linear burn</div>
+              <div class="dropdown-option" data-value="COLOR_BURN">Color burn</div>
+              <div class="dropdown-option separator">────────────</div>
+              <div class="dropdown-option" data-value="LIGHTEN">Lighten</div>
+              <div class="dropdown-option" data-value="SCREEN">Screen</div>
+              <div class="dropdown-option" data-value="PLUS_LIGHTER">Linear dodge</div>
+              <div class="dropdown-option" data-value="COLOR_DODGE">Color dodge</div>
+              <div class="dropdown-option separator">────────────</div>
+              <div class="dropdown-option" data-value="OVERLAY">Overlay</div>
+              <div class="dropdown-option" data-value="SOFT_LIGHT">Soft light</div>
+              <div class="dropdown-option" data-value="HARD_LIGHT">Hard light</div>
+              <div class="dropdown-option separator">────────────</div>
+              <div class="dropdown-option" data-value="DIFFERENCE">Difference</div>
+              <div class="dropdown-option" data-value="EXCLUSION">Exclusion</div>
+              <div class="dropdown-option separator">────────────</div>
+              <div class="dropdown-option" data-value="HUE">Hue</div>
+              <div class="dropdown-option" data-value="SATURATION">Saturation</div>
+              <div class="dropdown-option" data-value="COLOR">Color</div>
+              <div class="dropdown-option" data-value="LUMINOSITY">Luminosity</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Sticky Footer -->
+  <div class="sticky-footer">
+    <div class="button-row">
+      <button class="button" id="create-btn">Create New</button>
+      <button class="button" id="update-all-btn">Update all</button>
+    </div>
+
+    <footer>
+      by Prabin Pebam
+      <a href="https://github.com/prabinpebam/figma-liquid-glass" target="_blank">
+        <svg width="12" height="12" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" clip-rule="evenodd" d="M8 0C3.58 0 0 3.58 0 8C0 11.54 2.29 14.53 5.47 15.59C5.87 15.66 6.02 15.42 6.02 15.21C6.02 15.02 6.01 14.49 6.01 13.79C3.92 14.25 3.42 12.86 3.42 12.86C3.06 11.93 2.52 11.69 2.52 11.69C1.81 11.2 2.57 11.2 2.57 11.2C3.35 11.25 3.78 12.01 3.78 12.01C4.48 13.24 5.64 12.88 6.08 12.69C6.15 12.22 6.33 11.9 6.53 11.73C4.75 11.53 2.87 10.89 2.87 7.91C2.87 7.02 3.18 6.29 3.64 5.71C3.57 5.51 3.33 4.79 3.71 3.94C3.71 3.94 4.39 3.72 5.99 4.76C6.63 4.58 7.32 4.49 8 4.49C8.68 4.49 9.37 4.58 10.01 4.76C11.61 3.72 12.29 3.94 12.29 3.94C12.67 4.79 12.43 5.51 12.36 5.71C12.82 6.29 13.13 7.02 13.13 7.91C13.13 10.9 11.24 11.53 9.46 11.73C9.71 11.95 9.99 12.38 9.99 13.01C9.99 13.89 9.98 14.97 9.98 15.21C9.98 15.42 10.13 15.67 10.54 15.59C13.71 14.53 16 11.53 16 8C16 3.58 12.42 0 8 0Z"></path></svg>
+        figma-liquid-glass
+      </a>
+    </footer>
+  </div>
+
+  <!-- Bundled JavaScript will be injected here -->
+  <script src="index.js"></script>
+</body>
+</html>

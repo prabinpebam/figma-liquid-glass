@@ -15,7 +15,16 @@ module.exports = {
       { test: /\.ts$/, use: 'ts-loader', exclude: /node_modules/ }
     ]
   },
-  resolve: { extensions: ['.ts', '.js'] },
+  resolve: {
+    extensions: ['.ts', '.js'],
+    alias: {
+      '@core': path.resolve(__dirname, 'src/core'),
+      '@utils': path.resolve(__dirname, 'src/utils'),
+      '@effects': path.resolve(__dirname, 'src/effects'),
+      '@ui-communication': path.resolve(__dirname, 'src/ui-communication'),
+      '@shared': path.resolve(__dirname, 'shared')
+    }
+  },
   output: {
     path: path.resolve(__dirname, 'dist'),
     filename: '[name].js',
