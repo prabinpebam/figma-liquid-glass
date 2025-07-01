@@ -273,8 +273,13 @@ class LiquidGlassUI {
       }
     });
 
-    // Update blend mode dropdown
-    this.blendModeDropdown.setBlendMode(ep.tintBlendMode || 'NORMAL', this.hasMixedValues.tintBlendMode);
+    // Update blend mode dropdown - handle legacy blend mode values
+    let blendModeValue = ep.tintBlendMode || 'NORMAL';
+    // Convert legacy values to match UI options
+    if (blendModeValue === 'LINEAR_BURN') blendModeValue = 'PLUS_DARKER';
+    if (blendModeValue === 'LINEAR_DODGE') blendModeValue = 'PLUS_LIGHTER';
+    
+    this.blendModeDropdown.setBlendMode(blendModeValue, this.hasMixedValues.tintBlendMode);
   }
 
   private getAllParams(): any {

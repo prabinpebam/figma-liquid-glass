@@ -153,7 +153,11 @@ export function parseTintLayerName(name: string): Partial<EffectsParams> | null 
     // Parse blend mode: BM{mode}
     const bmMatch = paramStr.match(/BM([A-Z_]+)/);
     if (bmMatch) {
-      effects.tintBlendMode = bmMatch[1];
+      let blendMode = bmMatch[1];
+      // Convert Figma API values back to UI values for consistency
+      if (blendMode === 'LINEAR_BURN') blendMode = 'PLUS_DARKER';
+      if (blendMode === 'LINEAR_DODGE') blendMode = 'PLUS_LIGHTER';
+      effects.tintBlendMode = blendMode;
     }
     
     return effects;

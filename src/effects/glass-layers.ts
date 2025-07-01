@@ -7,11 +7,11 @@ export const BLEND_MODE_MAP: { [key: string]: BlendMode } = {
   'NORMAL': 'NORMAL',
   'DARKEN': 'DARKEN',
   'MULTIPLY': 'MULTIPLY',
-  'PLUS_DARKER': 'PLUS_DARKER', // Changed from LINEAR_BURN to match original
+  'PLUS_DARKER': 'LINEAR_BURN', // Fix: Map to correct Figma enum
   'COLOR_BURN': 'COLOR_BURN',
   'LIGHTEN': 'LIGHTEN',
   'SCREEN': 'SCREEN',
-  'PLUS_LIGHTER': 'PLUS_LIGHTER', // Changed from LINEAR_DODGE to match original
+  'PLUS_LIGHTER': 'LINEAR_DODGE', // Fix: Map to correct Figma enum
   'COLOR_DODGE': 'COLOR_DODGE',
   'OVERLAY': 'OVERLAY',
   'SOFT_LIGHT': 'SOFT_LIGHT',
