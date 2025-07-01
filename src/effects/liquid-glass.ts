@@ -26,6 +26,7 @@ export async function createLgElement(params: AllParams) {
   refractionLayer.constraints = { horizontal: 'SCALE', vertical: 'SCALE' };
   refractionLayer.resize(200, 100);
   refractionLayer.cornerRadius = 50;
+  refractionLayer.locked = true; // Lock refraction layer
   mainFrame.appendChild(refractionLayer);
   
   // Apply refraction effects (including stroke thickness)
@@ -38,6 +39,7 @@ export async function createLgElement(params: AllParams) {
   tintGroup.clipsContent = true;
   tintGroup.fills = [];
   tintGroup.resize(200, 100);
+  tintGroup.locked = true; // Lock tint group
   mainFrame.appendChild(tintGroup);
 
   // Shape mask goes first (bottom)
@@ -78,6 +80,7 @@ export async function createLgElement(params: AllParams) {
   highlightGroup.clipsContent = true;
   highlightGroup.fills = [];
   highlightGroup.resize(200, 100);
+  highlightGroup.locked = true; // Lock highlight group
   mainFrame.appendChild(highlightGroup);
 
   // Shape mask goes first (bottom)

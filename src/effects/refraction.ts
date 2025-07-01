@@ -66,6 +66,7 @@ async function createComplexShapeLg(selectedNode: SceneNode, params: AllParams) 
     flattened.constraints = { horizontal: 'SCALE', vertical: 'SCALE' };
     flattened.x = 0;
     flattened.y = 0;
+    flattened.locked = true; // Lock refraction layer
     
     // Apply stroke effects to the refraction layer
     applyRefractionEffects(flattened, params);
@@ -79,6 +80,7 @@ async function createComplexShapeLg(selectedNode: SceneNode, params: AllParams) 
     tintGroup.clipsContent = true;
     tintGroup.fills = [];
     tintGroup.resize(flattenedBounds.width, flattenedBounds.height);
+    tintGroup.locked = true; // Lock tint group
     mainFrame.appendChild(tintGroup);
 
     // Shape mask - clone the refraction layer for exact match
@@ -122,6 +124,7 @@ async function createComplexShapeLg(selectedNode: SceneNode, params: AllParams) 
     highlightGroup.clipsContent = true;
     highlightGroup.fills = [];
     highlightGroup.resize(flattenedBounds.width, flattenedBounds.height);
+    highlightGroup.locked = true; // Lock highlight group
     mainFrame.appendChild(highlightGroup);
 
     // Shape mask - clone the refraction layer for exact match
@@ -187,6 +190,7 @@ async function createSimpleShapeLg(selectedNode: SceneNode, params: AllParams) {
   refractionLayer.name = formatRefractionLayerName(params);
   refractionLayer.constraints = { horizontal: 'SCALE', vertical: 'SCALE' };
   refractionLayer.resize(mainFrame.width, mainFrame.height);
+  refractionLayer.locked = true; // Lock refraction layer
   
   if (selectedNode.type === 'RECTANGLE' && refractionLayer.type === 'RECTANGLE') {
     refractionLayer.cornerRadius = cornerRadius;
@@ -204,6 +208,7 @@ async function createSimpleShapeLg(selectedNode: SceneNode, params: AllParams) {
   tintGroup.clipsContent = true;
   tintGroup.fills = [];
   tintGroup.resize(mainFrame.width, mainFrame.height);
+  tintGroup.locked = true; // Lock tint group
   mainFrame.appendChild(tintGroup);
 
   // Shape mask goes first (bottom)
@@ -250,6 +255,7 @@ async function createSimpleShapeLg(selectedNode: SceneNode, params: AllParams) {
   highlightGroup.clipsContent = true;
   highlightGroup.fills = [];
   highlightGroup.resize(mainFrame.width, mainFrame.height);
+  highlightGroup.locked = true; // Lock highlight group
   mainFrame.appendChild(highlightGroup);
   
   // Shape mask goes first (bottom)
