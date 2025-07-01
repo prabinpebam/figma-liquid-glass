@@ -363,3 +363,13 @@ CA5 = Chromatic abberation: 5
 BB1.0 = Background blur: 1.0
 
 Use similar logic for encoding and readign back layer properties
+
+
+
+# Blend mode update logic
+Context: User has selected an LG element and is trying to change the blend mode.
+- Blend mode preview should be shown as soon as user hovers over any of the blend mode option in the dropdown.
+    - The corresponding blend mode is applied immediately to the tint layer as soon as the user hover over any blend mode option in the dropdown.
+- If the user clicks on a specific blend mode from the dropdown, that belnd mode is committed and applied.
+- If a user opens the blend mode dropdown and hovers on a few different options causing the blend mod preview to be triggered but doen't commit by clicking on a specific blend mode. Instead the user closes the dropdown by clicking outside the dropdown. In this case we retain the original blend mode that was selected before opening the dropdown in the first place.
+- This will respect single and multi-select scenarios

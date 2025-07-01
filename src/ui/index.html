@@ -510,6 +510,103 @@
       color: var(--text-color);
       font-style: normal;
     }
+
+    /* Custom dropdown styles */
+    .custom-dropdown {
+      position: relative;
+      width: 100%;
+    }
+
+    .dropdown-selected {
+      padding: 4px 6px;
+      background: var(--bg-secondary-color);
+      color: var(--text-color);
+      border: 1px solid var(--border-color);
+      border-radius: 4px;
+      font-size: 11px;
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      user-select: none;
+    }
+
+    .dropdown-selected:hover {
+      border-color: var(--text-secondary-color);
+    }
+
+    .dropdown-selected.open {
+      border-color: var(--primary-color);
+      border-top-left-radius: 0;
+      border-top-right-radius: 0;
+    }
+
+    .dropdown-arrow {
+      width: 0;
+      height: 0;
+      border-left: 4px solid transparent;
+      border-right: 4px solid transparent;
+      border-top: 4px solid var(--text-secondary-color);
+      transition: transform 0.2s ease;
+    }
+
+    .dropdown-selected.open .dropdown-arrow {
+      transform: rotate(180deg);
+    }
+
+    .dropdown-options {
+      position: absolute;
+      bottom: 100%;
+      left: 0;
+      right: 0;
+      background: var(--bg-secondary-color);
+      border: 1px solid var(--primary-color);
+      border-bottom: none;
+      border-radius: 4px 4px 0 0;
+      max-height: 200px;
+      overflow-y: auto;
+      z-index: 1000;
+      display: none;
+      box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.3);
+    }
+
+    .dropdown-options.open {
+      display: block;
+    }
+
+    .dropdown-option {
+      padding: 4px 6px;
+      font-size: 11px;
+      cursor: pointer;
+      transition: background-color 0.1s ease;
+    }
+
+    .dropdown-option:hover {
+      background: var(--border-color);
+    }
+
+    .dropdown-option.selected {
+      background: var(--primary-color);
+      color: white;
+    }
+
+    .dropdown-option.separator {
+      border-bottom: 1px solid var(--border-color);
+      cursor: default;
+      padding: 2px 6px;
+      font-size: 10px;
+      color: var(--text-secondary-color);
+      background: var(--bg-color);
+    }
+
+    .dropdown-option.separator:hover {
+      background: var(--bg-color);
+    }
+
+    .dropdown-selected.mixed-value {
+      font-style: italic;
+      color: var(--text-secondary-color);
+    }
   </style>
 </head>
 <body>
@@ -668,32 +765,38 @@
         
         <div class="control-full-width">
           <span class="control-label">Blend mode</span>
-          <select id="tint-blend-mode">
-            <option value="PASS_THROUGH">Pass through</option>
-            <option value="NORMAL" selected>Normal</option>
-            <option disabled>────────────</option>
-            <option value="DARKEN">Darken</option>
-            <option value="MULTIPLY">Multiply</option>
-            <option value="PLUS_DARKER">Plus darker</option>
-            <option value="COLOR_BURN">Color burn</option>
-            <option disabled>────────────</option>
-            <option value="LIGHTEN">Lighten</option>
-            <option value="SCREEN">Screen</option>
-            <option value="PLUS_LIGHTER">Plus lighter</option>
-            <option value="COLOR_DODGE">Color dodge</option>
-            <option disabled>────────────</option>
-            <option value="OVERLAY">Overlay</option>
-            <option value="SOFT_LIGHT">Soft light</option>
-            <option value="HARD_LIGHT">Hard light</option>
-            <option disabled>────────────</option>
-            <option value="DIFFERENCE">Difference</option>
-            <option value="EXCLUSION">Exclusion</option>
-            <option disabled>────────────</option>
-            <option value="HUE">Hue</option>
-            <option value="SATURATION">Saturation</option>
-            <option value="COLOR">Color</option>
-            <option value="LUMINOSITY">Luminosity</option>
-          </select>
+          <div class="custom-dropdown" id="tint-blend-mode-dropdown">
+            <div class="dropdown-selected" id="blend-mode-selected">
+              <span id="blend-mode-text">Normal</span>
+              <div class="dropdown-arrow"></div>
+            </div>
+            <div class="dropdown-options" id="blend-mode-options">
+              <div class="dropdown-option" data-value="PASS_THROUGH">Pass through</div>
+              <div class="dropdown-option selected" data-value="NORMAL">Normal</div>
+              <div class="dropdown-option separator">────────────</div>
+              <div class="dropdown-option" data-value="DARKEN">Darken</div>
+              <div class="dropdown-option" data-value="MULTIPLY">Multiply</div>
+              <div class="dropdown-option" data-value="PLUS_DARKER">Linear burn</div>
+              <div class="dropdown-option" data-value="COLOR_BURN">Color burn</div>
+              <div class="dropdown-option separator">────────────</div>
+              <div class="dropdown-option" data-value="LIGHTEN">Lighten</div>
+              <div class="dropdown-option" data-value="SCREEN">Screen</div>
+              <div class="dropdown-option" data-value="PLUS_LIGHTER">Linear dodge</div>
+              <div class="dropdown-option" data-value="COLOR_DODGE">Color dodge</div>
+              <div class="dropdown-option separator">────────────</div>
+              <div class="dropdown-option" data-value="OVERLAY">Overlay</div>
+              <div class="dropdown-option" data-value="SOFT_LIGHT">Soft light</div>
+              <div class="dropdown-option" data-value="HARD_LIGHT">Hard light</div>
+              <div class="dropdown-option separator">────────────</div>
+              <div class="dropdown-option" data-value="DIFFERENCE">Difference</div>
+              <div class="dropdown-option" data-value="EXCLUSION">Exclusion</div>
+              <div class="dropdown-option separator">────────────</div>
+              <div class="dropdown-option" data-value="HUE">Hue</div>
+              <div class="dropdown-option" data-value="SATURATION">Saturation</div>
+              <div class="dropdown-option" data-value="COLOR">Color</div>
+              <div class="dropdown-option" data-value="LUMINOSITY">Luminosity</div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -855,6 +958,7 @@
     let hasMixedValues = {};
     let lgElementCount = 0;
     let currentBlendModeOriginal = 'NORMAL';
+    let isBlendModeDropdownOpen = false;
 
     // Tab system
     function initializeTabs() {
@@ -960,7 +1064,7 @@
         reflectionOpacity: +document.getElementById('reflection-opacity').value,
         tintColor: document.getElementById('tint-color').value,
         tintOpacity: +document.getElementById('tint-opacity').value,
-        tintBlendMode: document.getElementById('tint-blend-mode').value,
+        tintBlendMode: window.getBlendModeValue ? window.getBlendModeValue() : 'NORMAL',
       };
     }
 
@@ -1024,6 +1128,10 @@
     }
 
     function updateSelectDisplay(select, value, isMixed) {
+      // This function is no longer used for blend mode since we have a custom dropdown
+      // Keep it for compatibility but make it handle null elements
+      if (!select) return;
+      
       if (isMixed) {
         // Add a mixed value option if it doesn't exist
         let mixedOption = select.querySelector('option[value="--mixed--"]');
@@ -1045,6 +1153,144 @@
         select.classList.remove('mixed-value');
       }
     }
+
+    // Message handling
+    window.onmessage = async (e) => {
+      const msg = e.data.pluginMessage;
+      if (!msg) return;
+      
+      console.log('UI received message:', msg.type, msg);
+
+      if (msg.type === 'plugin-ready') {
+        console.log('Plugin ready, ensuring UI is initialized');
+        if (!createBtn) {
+          initializeUI();
+        }
+        return;
+      }
+
+      if (msg.type === 'update-ui-controls') {
+        isMultipleSelection = msg.isMultipleSelection || false;
+        hasMixedValues = msg.hasMixedValues || {};
+        lgElementCount = msg.lgElementCount || 0;
+        
+        createBtn.disabled = msg.isSelected;
+        createBtn.textContent = 'Create New';
+        updateAllBtn.textContent = isMultipleSelection ? `Update selection (${lgElementCount})` : 'Update selection';
+        
+        // Update refraction params with mixed value detection
+        updateInputDisplay(document.getElementById('edge'), msg.params.edge || 20, hasMixedValues.edge);
+        updateInputDisplay(document.getElementById('strength'), msg.params.strength || 25, hasMixedValues.strength);
+        updateInputDisplay(document.getElementById('ca'), msg.params.ca || 5, hasMixedValues.ca);
+        updateInputDisplay(document.getElementById('frost'), msg.params.frost || 0, hasMixedValues.frost);
+        
+        // Update effects params with mixed value detection
+        if (msg.effectsParams) {
+          const ep = msg.effectsParams;
+          updateInputDisplay(document.getElementById('inner-shadow-x'), ep.innerShadowX || 10, hasMixedValues.innerShadowX);
+          updateInputDisplay(document.getElementById('inner-shadow-y'), ep.innerShadowY || 10, hasMixedValues.innerShadowY);
+          updateInputDisplay(document.getElementById('inner-shadow-blur'), ep.innerShadowBlur || 10, hasMixedValues.innerShadowBlur);
+          updateInputDisplay(document.getElementById('inner-shadow-spread'), ep.innerShadowSpread || 0, hasMixedValues.innerShadowSpread);
+          updateInputDisplay(document.getElementById('inner-shadow-opacity'), ep.innerShadowOpacity || 40, hasMixedValues.innerShadowOpacity);
+          updateInputDisplay(document.getElementById('stroke-angle'), ep.strokeAngle || 0, hasMixedValues.strokeAngle);
+          updateColorInputDisplay(document.getElementById('stroke-color'), ep.strokeColor || '#ffffff', hasMixedValues.strokeColor);
+          updateInputDisplay(document.getElementById('stroke-thickness'), ep.strokeThickness || 1, hasMixedValues.strokeThickness);
+          updateInputDisplay(document.getElementById('stroke-opacity'), ep.strokeOpacity || 100, hasMixedValues.strokeOpacity);
+          updateInputDisplay(document.getElementById('highlight-stroke-weight'), ep.highlightStrokeWeight || 12, hasMixedValues.highlightStrokeWeight);
+          updateInputDisplay(document.getElementById('highlight-blur'), ep.highlightBlur || 14, hasMixedValues.highlightBlur);
+          updateColorInputDisplay(document.getElementById('reflection-color'), ep.reflectionColor || '#ffffff', hasMixedValues.reflectionColor);
+          updateInputDisplay(document.getElementById('reflection-opacity'), ep.reflectionOpacity || 100, hasMixedValues.reflectionOpacity);
+          updateColorInputDisplay(document.getElementById('tint-color'), ep.tintColor || '#ffffff', hasMixedValues.tintColor);
+          updateInputDisplay(document.getElementById('tint-opacity'), ep.tintOpacity || 20, hasMixedValues.tintOpacity);
+          
+          // Update custom blend mode dropdown instead of using updateSelectDisplay
+          if (window.updateBlendModeDisplay) {
+            window.updateBlendModeDisplay(ep.tintBlendMode || 'NORMAL', hasMixedValues.tintBlendMode);
+          }
+        }
+        
+        if (msg.isSelected && !isMultipleSelection) {
+          send('update-lg-element', { params: getAllParams() });
+        }
+        return;
+      }
+
+      if (msg.type === 'selection-changed') {
+        isMultipleSelection = msg.isMultipleSelection || false;
+        
+        if (msg.canApplyEffect) {
+          createBtn.textContent = 'Apply Effect';
+          createBtn.disabled = false;
+          updateAllBtn.textContent = 'Update selection';
+        } else if (msg.isLgElement) {
+          createBtn.textContent = 'Create New';
+          createBtn.disabled = true;
+          updateAllBtn.textContent = 'Update selection';
+        } else {
+          createBtn.textContent = 'Create New';
+          createBtn.disabled = false;
+          updateAllBtn.textContent = 'Update selection';
+        }
+        return;
+      }
+
+      if (msg.type === 'selection-cleared') {
+        isMultipleSelection = false;
+        createBtn.disabled = false;
+        createBtn.textContent = 'Create New';
+        updateAllBtn.textContent = 'Update all';
+        canvas.style.display = 'none';
+        
+        // Remove multiple values indicators
+        document.querySelectorAll('.multiple-values').forEach(span => span.remove());
+        
+        if (!document.getElementById('placeholder')) {
+          const newPlaceholder = document.createElement('em');
+          newPlaceholder.id = 'placeholder';
+          newPlaceholder.innerHTML = `      
+            Select or create a Liquid Glass element.
+            <br><br>
+            Plugin needs to be kept open to update the effect.      
+          `;
+          document.getElementById('output-area').prepend(newPlaceholder);
+        }
+        return;
+      }
+
+      if (msg.type !== 'image-captured' || msg.error) return;
+
+      if (msg.shape) {
+        document.getElementById('placeholder')?.remove();
+        currentShape = msg.shape;
+        currentShapeType = msg.shapeType === 'complex' ? 'rectangle' : msg.shapeType;
+        
+        const img = new Image();
+        img.onload = async () => {
+          canvas.width = img.width;
+          canvas.height = img.height;
+          canvas.style.display = 'block';
+          gl.viewport(0, 0, canvas.width, canvas.height);
+
+          if (!tex) tex = gl.createTexture();
+          gl.activeTexture(gl.TEXTURE0);
+          gl.bindTexture(gl.TEXTURE_2D, tex);
+          gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
+          gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+          gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+          gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+          gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, img);
+
+          gl.uniform2f(uniforms.resolution, canvas.width, canvas.height);
+          gl.uniform1i(uniforms.backgroundTexture, 0);
+
+          updateUniformsAndRedraw(msg.params);
+          
+          const croppedDataUrl = cropCanvasResult(canvas, OFFSET);
+          send('apply-image-fill', { data: croppedDataUrl, nodeId: msg.nodeId });
+        };
+        img.src = msg.data;
+      }
+    };
 
     function getElementIdForParam(paramName) {
       const paramMap = {
@@ -1264,6 +1510,136 @@
       return idMap[elementId] || elementId;
     }
 
+    function setupBlendModeDropdown() {
+      const dropdown = document.getElementById('tint-blend-mode-dropdown');
+      const selected = document.getElementById('blend-mode-selected');
+      const options = document.getElementById('blend-mode-options');
+      const selectedText = document.getElementById('blend-mode-text');
+      
+      let isOpen = false;
+      let originalValue = 'NORMAL';
+      let currentValue = 'NORMAL';
+
+      // Get current blend mode value
+      function getCurrentBlendMode() {
+        const selectedOption = options.querySelector('.dropdown-option.selected');
+        return selectedOption ? selectedOption.dataset.value : 'NORMAL';
+      }
+
+      // Set blend mode value and update UI
+      function setBlendMode(value, isMixed = false) {
+        // Remove previous selection
+        options.querySelectorAll('.dropdown-option').forEach(opt => {
+          opt.classList.remove('selected');
+        });
+
+        if (isMixed) {
+          selectedText.textContent = '--';
+          selected.classList.add('mixed-value');
+        } else {
+          // Find and select the option
+          const option = options.querySelector(`[data-value="${value}"]`);
+          if (option) {
+            option.classList.add('selected');
+            selectedText.textContent = option.textContent;
+          }
+          selected.classList.remove('mixed-value');
+        }
+        currentValue = value;
+      }
+
+      // Open dropdown
+      function openDropdown() {
+        if (isOpen) return;
+        isOpen = true;
+        originalValue = currentValue;
+        selected.classList.add('open');
+        options.classList.add('open');
+        console.log('Blend mode dropdown opened, original value:', originalValue);
+      }
+
+      // Close dropdown
+      function closeDropdown(commit = false) {
+        if (!isOpen) return;
+        isOpen = false;
+        selected.classList.remove('open');
+        options.classList.remove('open');
+
+        if (!commit) {
+          // Revert to original value
+          console.log('Reverting blend mode to:', originalValue);
+          setBlendMode(originalValue);
+          send('revert-blend-mode', { originalBlendMode: originalValue });
+        }
+      }
+
+      // Handle click on selected area
+      selected.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (isOpen) {
+          closeDropdown(false);
+        } else {
+          openDropdown();
+        }
+      });
+
+      // Handle option hover
+      options.addEventListener('mouseover', (e) => {
+        if (!isOpen) return;
+        
+        const option = e.target.closest('.dropdown-option');
+        if (option && !option.classList.contains('separator')) {
+          const hoveredValue = option.dataset.value;
+          if (hoveredValue) {
+            console.log('Previewing blend mode:', hoveredValue);
+            send('preview-blend-mode', { blendMode: hoveredValue });
+          }
+        }
+      });
+
+      // Handle option click
+      options.addEventListener('click', (e) => {
+        if (!isOpen) return;
+        
+        const option = e.target.closest('.dropdown-option');
+        if (option && !option.classList.contains('separator')) {
+          const selectedValue = option.dataset.value;
+          if (selectedValue) {
+            console.log('Committing blend mode:', selectedValue);
+            setBlendMode(selectedValue);
+            handleControlChange('tintBlendMode');
+            closeDropdown(true);
+          }
+        }
+      });
+
+      // Handle click outside
+      document.addEventListener('click', (e) => {
+        if (isOpen && !dropdown.contains(e.target)) {
+          console.log('Clicked outside dropdown, reverting to:', originalValue);
+          closeDropdown(false);
+        }
+      });
+
+      // Handle escape key
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && isOpen) {
+          console.log('Escape pressed, reverting to:', originalValue);
+          closeDropdown(false);
+        }
+      });
+
+      // Expose function to update from external code
+      window.updateBlendModeDisplay = function(value, isMixed) {
+        setBlendMode(value, isMixed);
+      };
+
+      // Return current value getter for getAllParams
+      window.getBlendModeValue = function() {
+        return currentValue;
+      };
+    }
+
     function initializeUI() {
       console.log('Initializing UI...');
       
@@ -1304,6 +1680,9 @@
       // Set up draggable inputs
       setupDraggableInputs();
 
+      // Set up blend mode dropdown with preview functionality
+      setupBlendModeDropdown();
+
       // Set up event listeners
       createBtn.onclick = () => {
         console.log('Create button clicked');
@@ -1337,16 +1716,6 @@
         picker.addEventListener('input', () => handleControlChange(parameterName));
       });
 
-      // Set up blend mode dropdown
-      const blendModeSelect = document.getElementById('tint-blend-mode');
-      blendModeSelect.addEventListener('mouseenter', () => {
-        currentBlendModeOriginal = blendModeSelect.value;
-      });
-      
-      blendModeSelect.addEventListener('change', () => {
-        handleControlChange('tintBlendMode');
-      });
-
       console.log('UI initialized successfully');
     }
 
@@ -1364,140 +1733,6 @@
         initializeUI();
       }
     }, 500);
-
-    // Message handling
-    window.onmessage = async (e) => {
-      const msg = e.data.pluginMessage;
-      if (!msg) return;
-      
-      console.log('UI received message:', msg.type, msg);
-
-      if (msg.type === 'plugin-ready') {
-        console.log('Plugin ready, ensuring UI is initialized');
-        if (!createBtn) {
-          initializeUI();
-        }
-        return;
-      }
-
-      if (msg.type === 'update-ui-controls') {
-        isMultipleSelection = msg.isMultipleSelection || false;
-        hasMixedValues = msg.hasMixedValues || {};
-        lgElementCount = msg.lgElementCount || 0;
-        
-        createBtn.disabled = msg.isSelected;
-        createBtn.textContent = 'Create New';
-        updateAllBtn.textContent = isMultipleSelection ? `Update selection (${lgElementCount})` : 'Update selection';
-        
-        // Update refraction params with mixed value detection
-        updateInputDisplay(document.getElementById('edge'), msg.params.edge || 20, hasMixedValues.edge);
-        updateInputDisplay(document.getElementById('strength'), msg.params.strength || 25, hasMixedValues.strength);
-        updateInputDisplay(document.getElementById('ca'), msg.params.ca || 5, hasMixedValues.ca);
-        updateInputDisplay(document.getElementById('frost'), msg.params.frost || 0, hasMixedValues.frost);
-        
-        // Update effects params with mixed value detection
-        if (msg.effectsParams) {
-          const ep = msg.effectsParams;
-          updateInputDisplay(document.getElementById('inner-shadow-x'), ep.innerShadowX || 10, hasMixedValues.innerShadowX);
-          updateInputDisplay(document.getElementById('inner-shadow-y'), ep.innerShadowY || 10, hasMixedValues.innerShadowY);
-          updateInputDisplay(document.getElementById('inner-shadow-blur'), ep.innerShadowBlur || 10, hasMixedValues.innerShadowBlur);
-          updateInputDisplay(document.getElementById('inner-shadow-spread'), ep.innerShadowSpread || 0, hasMixedValues.innerShadowSpread);
-          updateInputDisplay(document.getElementById('inner-shadow-opacity'), ep.innerShadowOpacity || 40, hasMixedValues.innerShadowOpacity);
-          updateInputDisplay(document.getElementById('stroke-angle'), ep.strokeAngle || 0, hasMixedValues.strokeAngle);
-          updateColorInputDisplay(document.getElementById('stroke-color'), ep.strokeColor || '#ffffff', hasMixedValues.strokeColor);
-          updateInputDisplay(document.getElementById('stroke-thickness'), ep.strokeThickness || 1, hasMixedValues.strokeThickness);
-          updateInputDisplay(document.getElementById('stroke-opacity'), ep.strokeOpacity || 100, hasMixedValues.strokeOpacity);
-          updateInputDisplay(document.getElementById('highlight-stroke-weight'), ep.highlightStrokeWeight || 12, hasMixedValues.highlightStrokeWeight);
-          updateInputDisplay(document.getElementById('highlight-blur'), ep.highlightBlur || 14, hasMixedValues.highlightBlur);
-          updateColorInputDisplay(document.getElementById('reflection-color'), ep.reflectionColor || '#ffffff', hasMixedValues.reflectionColor);
-          updateInputDisplay(document.getElementById('reflection-opacity'), ep.reflectionOpacity || 100, hasMixedValues.reflectionOpacity);
-          updateColorInputDisplay(document.getElementById('tint-color'), ep.tintColor || '#ffffff', hasMixedValues.tintColor);
-          updateInputDisplay(document.getElementById('tint-opacity'), ep.tintOpacity || 20, hasMixedValues.tintOpacity);
-          updateSelectDisplay(document.getElementById('tint-blend-mode'), ep.tintBlendMode || 'NORMAL', hasMixedValues.tintBlendMode);
-        }
-        
-        if (msg.isSelected && !isMultipleSelection) {
-          send('update-lg-element', { params: getAllParams() });
-        }
-        return;
-      }
-
-      if (msg.type === 'selection-changed') {
-        isMultipleSelection = msg.isMultipleSelection || false;
-        
-        if (msg.canApplyEffect) {
-          createBtn.textContent = 'Apply Effect';
-          createBtn.disabled = false;
-          updateAllBtn.textContent = 'Update selection';
-        } else if (msg.isLgElement) {
-          createBtn.textContent = 'Create New';
-          createBtn.disabled = true;
-          updateAllBtn.textContent = 'Update selection';
-        } else {
-          createBtn.textContent = 'Create New';
-          createBtn.disabled = false;
-          updateAllBtn.textContent = 'Update selection';
-        }
-        return;
-      }
-
-      if (msg.type === 'selection-cleared') {
-        isMultipleSelection = false;
-        createBtn.disabled = false;
-        createBtn.textContent = 'Create New';
-        updateAllBtn.textContent = 'Update all';
-        canvas.style.display = 'none';
-        
-        // Remove multiple values indicators
-        document.querySelectorAll('.multiple-values').forEach(span => span.remove());
-        
-        if (!document.getElementById('placeholder')) {
-          const newPlaceholder = document.createElement('em');
-          newPlaceholder.id = 'placeholder';
-          newPlaceholder.innerHTML = `      
-            Select or create a Liquid Glass element.
-            <br><br>
-            Plugin needs to be kept open to update the effect.      
-          `;
-          document.getElementById('output-area').prepend(newPlaceholder);
-        }
-        return;
-      }
-
-      if (msg.type !== 'image-captured' || msg.error) return;
-
-      if (msg.shape) {
-        document.getElementById('placeholder')?.remove();
-        currentShape = msg.shape;
-        currentShapeType = msg.shapeType === 'complex' ? 'rectangle' : msg.shapeType;
-        
-        const img = new Image();
-        img.onload = async () => {
-          canvas.width = img.width;
-          canvas.height = img.height;
-          canvas.style.display = 'block';
-          gl.viewport(0, 0, canvas.width, canvas.height);
-
-          if (!tex) tex = gl.createTexture();
-          gl.activeTexture(gl.TEXTURE0);
-          gl.bindTexture(gl.TEXTURE_2D, tex);
-          gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
-          gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-          gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-          gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-          gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, img);
-
-          gl.uniform2f(uniforms.resolution, canvas.width, canvas.height);
-          gl.uniform1i(uniforms.backgroundTexture, 0);
-
-          updateUniformsAndRedraw(msg.params);
-          
-          const croppedDataUrl = cropCanvasResult(canvas, OFFSET);
-          send('apply-image-fill', { data: croppedDataUrl, nodeId: msg.nodeId });
-        };
-        img.src = msg.data;
-      }
-    };
   </script>
 </body>
 </html>

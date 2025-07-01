@@ -72,11 +72,11 @@ const BLEND_MODE_MAP: { [key: string]: BlendMode } = {
   'NORMAL': 'NORMAL',
   'DARKEN': 'DARKEN',
   'MULTIPLY': 'MULTIPLY',
-  'PLUS_DARKER': 'PLUS_DARKER',
+  'PLUS_DARKER': 'LINEAR_BURN', // Fixed: Use LINEAR_BURN instead of PLUS_DARKER
   'COLOR_BURN': 'COLOR_BURN',
   'LIGHTEN': 'LIGHTEN',
   'SCREEN': 'SCREEN',
-  'PLUS_LIGHTER': 'PLUS_LIGHTER',
+  'PLUS_LIGHTER': 'LINEAR_DODGE', // Fixed: Use LINEAR_DODGE instead of PLUS_LIGHTER
   'COLOR_DODGE': 'COLOR_DODGE',
   'OVERLAY': 'OVERLAY',
   'SOFT_LIGHT': 'SOFT_LIGHT',
@@ -748,6 +748,23 @@ figma.ui.onmessage = async (msg) => {
       }
       
       console.log(`Updated ${msg.parameterName} for ${lgElements.length} LG elements`);
+    } else if (msg.type === 'apply-image-fill') {
+      console.log('Applying image fill to node:', msg.nodeId);
+      const nodeToFill = await figma.getNodeByIdAsync(msg.nodeId) as FrameNode;
+      if (nodeToFill) {
+        const refractionLayer = nodeToFill.findOne(n => n.name.includes('Refraction')) as GeometryMixin;
+        if (refractionLayer && 'fills' in refractionLayer) {
+          const base64 = msg.data.split(',')[1];
+          const bytes = figma.base64Decode(base64);
+          const image = figma.createImage(bytes);
+          refractionLayer.fills = [{ type: 'IMAGE', imageHash: image.hash, scaleMode: 'FILL' }];
+          console.log('Applied image fill successfully');
+        } else {
+          console.log('Could not find refraction layer');
+        }
+      } else {
+        console.log('Could not find node to fill');
+      }
     } else if (msg.type === 'update-selection-lg-elements') {
       console.log('Updating LG elements in selection');
       if (isUpdatingAll) return;
@@ -804,7 +821,7 @@ figma.ui.onmessage = async (msg) => {
       console.log('Updating all LG elements');
       if (isUpdatingAll) return;
       isUpdatingAll = true;
-      scriptIsMakingChange = true;
+      scriptIsMakingChange = false;
 
       const originalViewport = { center: figma.viewport.center, zoom: figma.viewport.zoom };
       const lgNodes = figma.currentPage.findAll(n => n.type === 'FRAME' && !!parseLayerName(n.name)) as FrameNode[];
@@ -846,6 +863,60 @@ figma.ui.onmessage = async (msg) => {
         isUpdatingAll = false;
         scriptIsMakingChange = false;
       }
+    } else if (msg.type === 'preview-blend-mode') {
+      console.log('Previewing blend mode:', msg.blendMode);
+      const selection = figma.currentPage.selection;
+      
+      if (selection.length === 0) return;
+      
+      // Find all LG elements in selection (including nested)
+      const lgElements = findLgElementsInSelection(selection);
+      
+      if (lgElements.length === 0) {
+        console.log('No LG elements found in selection for blend mode preview');
+        return;
+      }
+      
+      // Apply blend mode preview to all LG elements
+      for (const lgElement of lgElements) {
+        const tintGroup = lgElement.findOne(n => n.name === 'tint group') as FrameNode;
+        if (tintGroup) {
+          const tintLayer = tintGroup.findOne(n => n.name.includes('Tint'));
+          if (tintLayer && 'blendMode' in tintLayer) {
+            const blendMode = BLEND_MODE_MAP[msg.blendMode] || 'NORMAL';
+            tintLayer.blendMode = blendMode;
+          }
+        }
+      }
+      
+      console.log(`Previewed blend mode ${msg.blendMode} for ${lgElements.length} LG elements`);
+    } else if (msg.type === 'revert-blend-mode') {
+      console.log('Reverting blend mode to:', msg.originalBlendMode);
+      const selection = figma.currentPage.selection;
+      
+      if (selection.length === 0) return;
+      
+      // Find all LG elements in selection (including nested)
+      const lgElements = findLgElementsInSelection(selection);
+      
+      if (lgElements.length === 0) {
+        console.log('No LG elements found in selection for blend mode revert');
+        return;
+      }
+      
+      // Revert blend mode for all LG elements
+      for (const lgElement of lgElements) {
+        const tintGroup = lgElement.findOne(n => n.name === 'tint group') as FrameNode;
+        if (tintGroup) {
+          const tintLayer = tintGroup.findOne(n => n.name.includes('Tint'));
+          if (tintLayer && 'blendMode' in tintLayer) {
+            const blendMode = BLEND_MODE_MAP[msg.originalBlendMode] || 'NORMAL';
+            tintLayer.blendMode = blendMode;
+          }
+        }
+      }
+      
+      console.log(`Reverted blend mode to ${msg.originalBlendMode} for ${lgElements.length} LG elements`);
     } else if (msg.type === 'preview-effects') {
       // Handle blend mode preview (optional enhancement)
       console.log('Previewing effects:', msg.params);

@@ -384,3 +384,15 @@ function findLgElementsInSelection(nodes: SceneNode[]): FrameNode[] {
 4. User can then use "Create New" or select different elements
 
 This plan ensures a minimal, tight UI while providing maximum flexibility for complex selection scenarios and nested LG element management.
+
+
+
+
+
+
+
+Is there some way you can have separate modular ts files in the src folder but while building you compile it all into a single index.html file in the dist folder which is how Figma needs it. Same for code.ts file also.
+That way it's much easier to work with each ts file.
+
+If this is possible, give me a plan on how to do it.
+Don't make any changes yet. I want to review the plan.
