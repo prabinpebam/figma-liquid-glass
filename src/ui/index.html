@@ -494,6 +494,22 @@
     footer svg {
       fill: currentColor;
     }
+
+    .draggable-input.mixed-value,
+    .color-input.mixed-value {
+      font-style: italic;
+      color: var(--text-secondary-color);
+    }
+
+    select.mixed-value {
+      font-style: italic;
+      color: var(--text-secondary-color);
+    }
+
+    .draggable-input.being-edited {
+      color: var(--text-color);
+      font-style: normal;
+    }
   </style>
 </head>
 <body>
@@ -836,6 +852,8 @@
 
     // UI State
     let isMultipleSelection = false;
+    let hasMixedValues = {};
+    let lgElementCount = 0;
     let currentBlendModeOriginal = 'NORMAL';
 
     // Tab system
@@ -981,50 +999,59 @@
       return tempCanvas.toDataURL('image/png');
     }
 
-    function handleControlChange(parameterName = null) {
-      // Determine if we're updating refraction or effects parameters
-      const isRefractionParam = ['edge', 'strength', 'ca', 'frost'].includes(parameterName);
-      const isEffectsParam = parameterName && !isRefractionParam;
-      
-      // For single LG element selection - update with optimization
-      if (createBtn.disabled && !isMultipleSelection) {
-        const params = getAllParams();
-        
-        // Skip image capture for effects-only updates
-        if (isEffectsParam) {
-          send('update-lg-element-effects-only', { params, parameterName });
-        } else {
-          send('update-lg-element', { params });
-        }
-        return;
+    function updateInputDisplay(input, value, isMixed) {
+      if (isMixed) {
+        input.value = '--';
+        input.classList.add('mixed-value');
+      } else {
+        input.value = value.toString();
+        input.classList.remove('mixed-value');
       }
-      
-      // For multiple selection - only update effects parameters in real-time
-      if (isMultipleSelection && parameterName) {
-        if (isEffectsParam) {
-          // Send real-time update for effects parameters only
-          const singleParam = {};
-          singleParam[parameterName] = document.getElementById(getElementIdForParam(parameterName)).value;
-          
-          // Convert color and numeric values appropriately
-          if (parameterName.includes('Color')) {
-            singleParam[parameterName] = document.getElementById(getElementIdForParam(parameterName)).value;
-          } else if (parameterName === 'tintBlendMode') {
-            singleParam[parameterName] = document.getElementById('tint-blend-mode').value;
-          } else {
-            singleParam[parameterName] = +document.getElementById(getElementIdForParam(parameterName)).value;
-          }
-          
-          send('update-effects-realtime', { 
-            parameterName, 
-            parameterValue: singleParam[parameterName] 
-          });
+    }
+
+    function updateColorInputDisplay(input, value, isMixed) {
+      if (isMixed) {
+        input.style.background = 'linear-gradient(45deg, #666 25%, transparent 25%, transparent 75%, #666 75%, #666), linear-gradient(45deg, #666 25%, transparent 25%, transparent 75%, #666 75%, #666)';
+        input.style.backgroundSize = '8px 8px';
+        input.style.backgroundPosition = '0 0, 4px 4px';
+        input.value = '#000000'; // Fallback value
+      } else {
+        input.style.background = '';
+        input.style.backgroundSize = '';
+        input.style.backgroundPosition = '';
+        input.value = value;
+      }
+    }
+
+    function updateSelectDisplay(select, value, isMixed) {
+      if (isMixed) {
+        // Add a mixed value option if it doesn't exist
+        let mixedOption = select.querySelector('option[value="--mixed--"]');
+        if (!mixedOption) {
+          mixedOption = document.createElement('option');
+          mixedOption.value = '--mixed--';
+          mixedOption.textContent = '--';
+          select.insertBefore(mixedOption, select.firstChild);
         }
+        select.value = '--mixed--';
+        select.classList.add('mixed-value');
+      } else {
+        // Remove mixed option if it exists
+        const mixedOption = select.querySelector('option[value="--mixed--"]');
+        if (mixedOption) {
+          mixedOption.remove();
+        }
+        select.value = value;
+        select.classList.remove('mixed-value');
       }
     }
 
     function getElementIdForParam(paramName) {
       const paramMap = {
+        'edge': 'edge',
+        'strength': 'strength', 
+        'ca': 'ca',
+        'frost': 'frost',
         'innerShadowX': 'inner-shadow-x',
         'innerShadowY': 'inner-shadow-y',
         'innerShadowBlur': 'inner-shadow-blur',
@@ -1043,6 +1070,47 @@
         'tintBlendMode': 'tint-blend-mode'
       };
       return paramMap[paramName] || paramName;
+    }
+
+    function handleControlChange(parameterName = null) {
+      // Skip if input shows mixed values (unless user is actively changing it)
+      const element = parameterName ? document.getElementById(getElementIdForParam(parameterName)) : null;
+      if (element && element.value === '--' && !element.classList.contains('being-edited')) {
+        return;
+      }
+
+      // Determine if we're updating refraction or effects parameters
+      const isRefractionParam = ['edge', 'strength', 'ca', 'frost'].includes(parameterName);
+      const isEffectsParam = parameterName && !isRefractionParam;
+      
+      // For single LG element selection - update with optimization
+      if (createBtn.disabled && !isMultipleSelection) {
+        const params = getAllParams();
+        
+        // Skip image capture for effects-only updates
+        if (isEffectsParam) {
+          send('update-lg-element-effects-only', { params, parameterName });
+        } else {
+          send('update-lg-element', { params });
+        }
+        return;
+      }
+      
+      // For multiple selection - update all selected LG elements
+      if (isMultipleSelection && parameterName) {
+        const params = getAllParams();
+        
+        if (isEffectsParam) {
+          // Send real-time update for effects parameters only
+          send('update-effects-realtime', { 
+            parameterName, 
+            parameterValue: params[parameterName]
+          });
+        } else if (isRefractionParam) {
+          // For refraction parameters, send full update
+          send('update-selection-lg-elements', { params });
+        }
+      }
     }
 
     // Draggable input functionality
@@ -1073,13 +1141,29 @@
                 // Focus for editing
                 input.focus();
                 input.select();
+                input.classList.add('being-edited');
+                
+                // Clear mixed value display when editing
+                if (input.value === '--') {
+                  input.value = '';
+                  input.classList.remove('mixed-value');
+                }
               }
             }, 200);
           }
           
           isDragging = false;
+          
+          // Handle mixed values - use the minimum value as starting point
+          if (input.value === '--') {
+            startValue = min;
+            input.value = min.toString();
+            input.classList.remove('mixed-value');
+          } else {
+            startValue = parseFloat(input.value) || 0;
+          }
+          
           startX = e.clientX;
-          startValue = parseFloat(input.value) || 0;
           
           document.addEventListener('mousemove', onMouseMove);
           document.addEventListener('mouseup', onMouseUp);
@@ -1092,12 +1176,13 @@
           if (Math.abs(deltaX) > 5 && !isDragging) {
             isDragging = true;
             input.classList.add('dragging');
+            input.classList.remove('mixed-value');
             input.blur(); // Remove focus to prevent text editing
           }
           
           if (isDragging) {
             const newValue = Math.min(max, Math.max(min, startValue + (deltaX * dragSensitivity)));
-            const roundedValue = Math.round(newValue); // Round to whole number only
+            const roundedValue = Math.round(newValue);
             input.value = roundedValue.toString();
             handleControlChange(parameterName);
           }
@@ -1119,11 +1204,12 @@
         // Handle direct text input
         input.addEventListener('input', () => {
           if (!isDragging) {
+            input.classList.remove('mixed-value');
             let value = parseFloat(input.value);
             if (isNaN(value)) return;
             
             value = Math.min(max, Math.max(min, value));
-            input.value = Math.round(value).toString(); // Round to whole number only
+            input.value = Math.round(value).toString();
             handleControlChange(parameterName);
           }
         });
@@ -1136,6 +1222,13 @@
         });
 
         input.addEventListener('blur', () => {
+          input.classList.remove('being-edited');
+          
+          // Handle mixed value case
+          if (input.value === '' || input.value === '--') {
+            input.value = min.toString();
+          }
+          
           let value = parseFloat(input.value);
           if (isNaN(value)) {
             input.value = min.toString();
@@ -1143,7 +1236,7 @@
           }
           
           value = Math.min(max, Math.max(min, value));
-          input.value = Math.round(value).toString(); // Round to whole number only
+          input.value = Math.round(value).toString();
           handleControlChange(parameterName);
         });
       });
@@ -1289,48 +1382,38 @@
 
       if (msg.type === 'update-ui-controls') {
         isMultipleSelection = msg.isMultipleSelection || false;
+        hasMixedValues = msg.hasMixedValues || {};
+        lgElementCount = msg.lgElementCount || 0;
+        
         createBtn.disabled = msg.isSelected;
         createBtn.textContent = 'Create New';
-        updateAllBtn.textContent = 'Update selection';
+        updateAllBtn.textContent = isMultipleSelection ? `Update selection (${lgElementCount})` : 'Update selection';
         
-        // Update refraction params
-        document.getElementById('edge').value = msg.params.edge || 20;
-        document.getElementById('strength').value = msg.params.strength || 25;
-        document.getElementById('ca').value = msg.params.ca || 5;
-        document.getElementById('frost').value = msg.params.frost || 0;
+        // Update refraction params with mixed value detection
+        updateInputDisplay(document.getElementById('edge'), msg.params.edge || 20, hasMixedValues.edge);
+        updateInputDisplay(document.getElementById('strength'), msg.params.strength || 25, hasMixedValues.strength);
+        updateInputDisplay(document.getElementById('ca'), msg.params.ca || 5, hasMixedValues.ca);
+        updateInputDisplay(document.getElementById('frost'), msg.params.frost || 0, hasMixedValues.frost);
         
-        // Update effects params
+        // Update effects params with mixed value detection
         if (msg.effectsParams) {
           const ep = msg.effectsParams;
-          document.getElementById('inner-shadow-x').value = ep.innerShadowX || 10;
-          document.getElementById('inner-shadow-y').value = ep.innerShadowY || 10;
-          document.getElementById('inner-shadow-blur').value = ep.innerShadowBlur || 10;
-          document.getElementById('inner-shadow-spread').value = ep.innerShadowSpread || 0;
-          document.getElementById('inner-shadow-opacity').value = ep.innerShadowOpacity || 40;
-          document.getElementById('stroke-angle').value = ep.strokeAngle || 0;
-          document.getElementById('stroke-color').value = ep.strokeColor || '#ffffff';
-          document.getElementById('stroke-opacity').value = ep.strokeOpacity || 100;
-          document.getElementById('highlight-stroke-weight').value = ep.highlightStrokeWeight || 12;
-          document.getElementById('highlight-blur').value = ep.highlightBlur || 14;
-          document.getElementById('reflection-color').value = ep.reflectionColor || '#ffffff';
-          document.getElementById('reflection-opacity').value = ep.reflectionOpacity || 100;
-          document.getElementById('tint-color').value = ep.tintColor || '#ffffff';
-          document.getElementById('tint-opacity').value = ep.tintOpacity || 20;
-          document.getElementById('tint-blend-mode').value = ep.tintBlendMode || 'NORMAL';
-        }
-
-        // Show "Multiple values" indicators if needed
-        if (isMultipleSelection) {
-          document.querySelectorAll('.label').forEach(label => {
-            if (!label.querySelector('.multiple-values')) {
-              const span = document.createElement('span');
-              span.className = 'multiple-values';
-              span.textContent = 'Multiple values';
-              label.appendChild(span);
-            }
-          });
-        } else {
-          document.querySelectorAll('.multiple-values').forEach(span => span.remove());
+          updateInputDisplay(document.getElementById('inner-shadow-x'), ep.innerShadowX || 10, hasMixedValues.innerShadowX);
+          updateInputDisplay(document.getElementById('inner-shadow-y'), ep.innerShadowY || 10, hasMixedValues.innerShadowY);
+          updateInputDisplay(document.getElementById('inner-shadow-blur'), ep.innerShadowBlur || 10, hasMixedValues.innerShadowBlur);
+          updateInputDisplay(document.getElementById('inner-shadow-spread'), ep.innerShadowSpread || 0, hasMixedValues.innerShadowSpread);
+          updateInputDisplay(document.getElementById('inner-shadow-opacity'), ep.innerShadowOpacity || 40, hasMixedValues.innerShadowOpacity);
+          updateInputDisplay(document.getElementById('stroke-angle'), ep.strokeAngle || 0, hasMixedValues.strokeAngle);
+          updateColorInputDisplay(document.getElementById('stroke-color'), ep.strokeColor || '#ffffff', hasMixedValues.strokeColor);
+          updateInputDisplay(document.getElementById('stroke-thickness'), ep.strokeThickness || 1, hasMixedValues.strokeThickness);
+          updateInputDisplay(document.getElementById('stroke-opacity'), ep.strokeOpacity || 100, hasMixedValues.strokeOpacity);
+          updateInputDisplay(document.getElementById('highlight-stroke-weight'), ep.highlightStrokeWeight || 12, hasMixedValues.highlightStrokeWeight);
+          updateInputDisplay(document.getElementById('highlight-blur'), ep.highlightBlur || 14, hasMixedValues.highlightBlur);
+          updateColorInputDisplay(document.getElementById('reflection-color'), ep.reflectionColor || '#ffffff', hasMixedValues.reflectionColor);
+          updateInputDisplay(document.getElementById('reflection-opacity'), ep.reflectionOpacity || 100, hasMixedValues.reflectionOpacity);
+          updateColorInputDisplay(document.getElementById('tint-color'), ep.tintColor || '#ffffff', hasMixedValues.tintColor);
+          updateInputDisplay(document.getElementById('tint-opacity'), ep.tintOpacity || 20, hasMixedValues.tintOpacity);
+          updateSelectDisplay(document.getElementById('tint-blend-mode'), ep.tintBlendMode || 'NORMAL', hasMixedValues.tintBlendMode);
         }
         
         if (msg.isSelected && !isMultipleSelection) {

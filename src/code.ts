@@ -521,6 +521,113 @@ async function updateLgElement(node: FrameNode, params: AllParams, context: 'cre
   }
 }
 
+// Function to analyze multiple LG elements and detect mixed values
+function analyzeMultipleLgElements(lgElements: FrameNode[]): { refractionParams: Partial<RefractionParams>, effectsParams: Partial<EffectsParams>, hasMixedValues: { [key: string]: boolean } } {
+  if (lgElements.length === 0) {
+    return {
+      refractionParams: { edge: 20, strength: 25, ca: 5, frost: 0 },
+      effectsParams: {
+        innerShadowX: 10, innerShadowY: 10, innerShadowBlur: 10, innerShadowSpread: 0, innerShadowOpacity: 40,
+        strokeAngle: 0, strokeColor: '#ffffff', strokeThickness: 1, strokeOpacity: 100,
+        highlightStrokeWeight: 12, highlightBlur: 14,
+        reflectionColor: '#ffffff', reflectionOpacity: 100,
+        tintColor: '#ffffff', tintOpacity: 20, tintBlendMode: 'NORMAL'
+      },
+      hasMixedValues: {}
+    };
+  }
+
+  // Collect all parameter values from all LG elements
+  const allRefractionParams: RefractionParams[] = [];
+  const allEffectsParams: Partial<EffectsParams>[] = [];
+
+  for (const lgElement of lgElements) {
+    const refractionParams = parseLayerName(lgElement.name);
+    const effectsParams = extractEffectsFromLgElement(lgElement);
+    
+    if (refractionParams) {
+      allRefractionParams.push(refractionParams);
+      allEffectsParams.push(effectsParams);
+    }
+  }
+
+  if (allRefractionParams.length === 0) {
+    return {
+      refractionParams: { edge: 20, strength: 25, ca: 5, frost: 0 },
+      effectsParams: {
+        innerShadowX: 10, innerShadowY: 10, innerShadowBlur: 10, innerShadowSpread: 0, innerShadowOpacity: 40,
+        strokeAngle: 0, strokeColor: '#ffffff', strokeThickness: 1, strokeOpacity: 100,
+        highlightStrokeWeight: 12, highlightBlur: 14,
+        reflectionColor: '#ffffff', reflectionOpacity: 100,
+        tintColor: '#ffffff', tintOpacity: 20, tintBlendMode: 'NORMAL'
+      },
+      hasMixedValues: {}
+    };
+  }
+
+  // Check for mixed values and determine final values
+  const hasMixedValues: { [key: string]: boolean } = {};
+  const finalRefractionParams: Partial<RefractionParams> = {};
+  const finalEffectsParams: Partial<EffectsParams> = {};
+
+  // Check refraction parameters
+  const refractionKeys: (keyof RefractionParams)[] = ['edge', 'strength', 'ca', 'frost'];
+  for (const key of refractionKeys) {
+    const values = allRefractionParams.map(p => p[key]);
+    const firstValue = values[0];
+    const allSame = values.every(v => v === firstValue);
+    
+    if (allSame) {
+      finalRefractionParams[key] = firstValue;
+      hasMixedValues[key] = false;
+    } else {
+      finalRefractionParams[key] = firstValue; // Use first value as default
+      hasMixedValues[key] = true;
+    }
+  }
+
+  // Check effects parameters
+  const effectsKeys: (keyof EffectsParams)[] = [
+    'innerShadowX', 'innerShadowY', 'innerShadowBlur', 'innerShadowSpread', 'innerShadowOpacity',
+    'strokeAngle', 'strokeColor', 'strokeThickness', 'strokeOpacity',
+    'highlightStrokeWeight', 'highlightBlur', 'reflectionColor', 'reflectionOpacity',
+    'tintColor', 'tintOpacity', 'tintBlendMode'
+  ];
+
+  for (const key of effectsKeys) {
+    const values = allEffectsParams.map(p => p[key]).filter(v => v !== undefined);
+    if (values.length === 0) {
+      // Use default values if no values found
+      const defaults = {
+        innerShadowX: 10, innerShadowY: 10, innerShadowBlur: 10, innerShadowSpread: 0, innerShadowOpacity: 40,
+        strokeAngle: 0, strokeColor: '#ffffff', strokeThickness: 1, strokeOpacity: 100,
+        highlightStrokeWeight: 12, highlightBlur: 14,
+        reflectionColor: '#ffffff', reflectionOpacity: 100,
+        tintColor: '#ffffff', tintOpacity: 20, tintBlendMode: 'NORMAL'
+      };
+      finalEffectsParams[key] = defaults[key];
+      hasMixedValues[key] = false;
+    } else {
+      const firstValue = values[0];
+      const allSame = values.every(v => v === firstValue);
+      
+      if (allSame) {
+        finalEffectsParams[key] = firstValue;
+        hasMixedValues[key] = false;
+      } else {
+        finalEffectsParams[key] = firstValue; // Use first value as default
+        hasMixedValues[key] = true;
+      }
+    }
+  }
+
+  return {
+    refractionParams: finalRefractionParams as RefractionParams,
+    effectsParams: finalEffectsParams,
+    hasMixedValues
+  };
+}
+
 // Enhanced selection change handler
 async function onSelectionChange() {
   const sel = figma.currentPage.selection;
@@ -538,38 +645,33 @@ async function onSelectionChange() {
         params: refractionParams, 
         effectsParams: effectsParams,
         isSelected: true,
-        isMultipleSelection: false
+        isMultipleSelection: false,
+        hasMixedValues: {} // No mixed values for single selection
       });
       captureAndSend(editState.node, { ...refractionParams, ...effectsParams });
     }
     figma.ui.postMessage({ type: 'selection-changed', isLgElement: true, canApplyEffect: false });
     
   } else if (sel.length > 1) {
-    // Multiple selection - check if any are LG elements
-    const lgElements = sel.filter(node => node.type === 'FRAME' && parseLayerName(node.name)) as FrameNode[];
+    // Multiple selection - find all LG elements in the selection
+    const lgElements = findLgElementsInSelection(sel);
     
     if (lgElements.length > 0) {
-      // Multiple LG elements selected
+      // Multiple LG elements found
       editState.node = null;
       editState.lastBounds = null;
       
-      // For multiple selection, we could show average values or "Multiple values"
-      // For now, just show default values and indicate multiple selection
-      const defaultParams = { edge: 20, strength: 25, ca: 5, frost: 0 };
-      const defaultEffects = {
-        innerShadowX: 10, innerShadowY: 10, innerShadowBlur: 10, innerShadowSpread: 0, innerShadowOpacity: 40,
-        strokeAngle: 0, strokeColor: '#ffffff', strokeThickness: 1, strokeOpacity: 100,
-        highlightStrokeWeight: 12, highlightBlur: 14,
-        reflectionColor: '#ffffff', reflectionOpacity: 100,
-        tintColor: '#ffffff', tintOpacity: 20, tintBlendMode: 'NORMAL'
-      };
+      // Analyze all LG elements to detect mixed values
+      const analysis = analyzeMultipleLgElements(lgElements);
       
       figma.ui.postMessage({ 
         type: 'update-ui-controls', 
-        params: defaultParams,
-        effectsParams: defaultEffects,
+        params: analysis.refractionParams,
+        effectsParams: analysis.effectsParams,
         isSelected: true,
-        isMultipleSelection: true
+        isMultipleSelection: true,
+        hasMixedValues: analysis.hasMixedValues,
+        lgElementCount: lgElements.length
       });
       figma.ui.postMessage({ type: 'selection-changed', isLgElement: true, canApplyEffect: false, isMultipleSelection: true });
     } else {
@@ -646,23 +748,6 @@ figma.ui.onmessage = async (msg) => {
       }
       
       console.log(`Updated ${msg.parameterName} for ${lgElements.length} LG elements`);
-    } else if (msg.type === 'apply-image-fill') {
-      console.log('Applying image fill to node:', msg.nodeId);
-      const nodeToFill = await figma.getNodeByIdAsync(msg.nodeId) as FrameNode;
-      if (nodeToFill) {
-        const refractionLayer = nodeToFill.findOne(n => n.name.includes('Refraction')) as GeometryMixin;
-        if (refractionLayer && 'fills' in refractionLayer) {
-          const base64 = msg.data.split(',')[1];
-          const bytes = figma.base64Decode(base64);
-          const image = figma.createImage(bytes);
-          refractionLayer.fills = [{ type: 'IMAGE', imageHash: image.hash, scaleMode: 'FILL' }];
-          console.log('Applied image fill successfully');
-        } else {
-          console.log('Could not find refraction layer');
-        }
-      } else {
-        console.log('Could not find node to fill');
-      }
     } else if (msg.type === 'update-selection-lg-elements') {
       console.log('Updating LG elements in selection');
       if (isUpdatingAll) return;
@@ -699,7 +784,7 @@ figma.ui.onmessage = async (msg) => {
           notification.cancel();
           notification = figma.notify(`Updating ${i + 1} of ${lgNodes.length}: ${node.name}`);
           
-          // Use the parameters from the UI - this updates refraction parameters only
+          // Use the parameters from the UI - this updates all parameters to make them uniform
           await updateLgElement(node, msg.params, 'update');
           await new Promise(resolve => setTimeout(resolve, 100));
         }
