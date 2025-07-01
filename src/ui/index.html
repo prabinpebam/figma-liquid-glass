@@ -1221,15 +1221,19 @@
         if (msg.canApplyEffect) {
           createBtn.textContent = 'Apply Effect';
           createBtn.disabled = false;
-          updateAllBtn.textContent = 'Update selection';
+          updateAllBtn.textContent = 'Update all';
         } else if (msg.isLgElement) {
           createBtn.textContent = 'Create New';
           createBtn.disabled = true;
-          updateAllBtn.textContent = 'Update selection';
+          if (isMultipleSelection) {
+            updateAllBtn.textContent = `Update selection (${msg.lgElementCount || 0})`;
+          } else {
+            updateAllBtn.textContent = 'Update all';
+          }
         } else {
           createBtn.textContent = 'Create New';
           createBtn.disabled = false;
-          updateAllBtn.textContent = 'Update selection';
+          updateAllBtn.textContent = 'Update all';
         }
         return;
       }
@@ -1700,11 +1704,13 @@
       };
 
       updateAllBtn.onclick = () => {
-        console.log('Update button clicked');
-        if (updateAllBtn.textContent === 'Update selection') {
+        console.log('Update button clicked:', updateAllBtn.textContent);
+        if (updateAllBtn.textContent.startsWith('Update selection')) {
+          // Multiple LG elements are selected
           const params = getAllParams();
           send('update-selection-lg-elements', { params });
         } else {
+          // "Update all" - update all LG elements on the page
           send('update-all-lg-elements', {});
         }
       };

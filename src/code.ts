@@ -141,7 +141,7 @@ figma.ui.onmessage = async (msg) => {
       console.log('Updating all LG elements');
       if (isUpdatingAll) return;
       isUpdatingAll = true;
-      scriptIsMakingChange = false;
+      scriptIsMakingChange = true;
 
       const originalViewport = { center: figma.viewport.center, zoom: figma.viewport.zoom };
       const lgNodes = figma.currentPage.findAll(n => n.type === 'FRAME' && !!parseLayerName(n.name)) as FrameNode[];

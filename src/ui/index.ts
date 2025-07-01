@@ -102,11 +102,13 @@ class LiquidGlassUI {
     };
 
     this.updateAllBtn.onclick = () => {
-      console.log('Update button clicked');
-      if (this.updateAllBtn.textContent === 'Update selection') {
+      console.log('Update button clicked:', this.updateAllBtn.textContent);
+      if (this.updateAllBtn.textContent.startsWith('Update selection')) {
+        // Multiple LG elements are selected
         const params = this.getAllParams();
         pluginBridge.send('update-selection-lg-elements', { params });
       } else {
+        // "Update all" - update all LG elements on the page
         pluginBridge.send('update-all-lg-elements', {});
       }
     };
@@ -158,15 +160,19 @@ class LiquidGlassUI {
     if (msg.canApplyEffect) {
       this.createBtn.textContent = 'Apply Effect';
       this.createBtn.disabled = false;
-      this.updateAllBtn.textContent = 'Update selection';
+      this.updateAllBtn.textContent = 'Update all';
     } else if (msg.isLgElement) {
       this.createBtn.textContent = 'Create New';
       this.createBtn.disabled = true;
-      this.updateAllBtn.textContent = 'Update selection';
+      if (this.isMultipleSelection) {
+        this.updateAllBtn.textContent = `Update selection (${msg.lgElementCount || 0})`;
+      } else {
+        this.updateAllBtn.textContent = 'Update all';
+      }
     } else {
       this.createBtn.textContent = 'Create New';
       this.createBtn.disabled = false;
-      this.updateAllBtn.textContent = 'Update selection';
+      this.updateAllBtn.textContent = 'Update all';
     }
   }
 
