@@ -179,17 +179,12 @@ export class ControlManager {
   }
 
   // Helper methods for updating display
-  public updateInputDisplay(input: HTMLInputElement, value: any, isMixed: boolean): void {
-    if (isMixed) {
-      input.value = '--';
-      input.classList.add('mixed-value');
-    } else {
-      input.value = value.toString();
-      input.classList.remove('mixed-value');
-    }
+  public updateInputDisplay(input: HTMLInputElement, value: number, hasMixedValue: boolean = false): void {
+    // Simplified - no mixed value handling as per original code
+    input.value = value.toString();
   }
 
-  public updateColorInputDisplay(input: HTMLInputElement, value: string, isMixed: boolean): void {
+  public updateColorInputDisplay(input: HTMLInputElement, value: string, isMixed: boolean = false): void {
     if (isMixed) {
       input.style.background = 'linear-gradient(45deg, #666 25%, transparent 25%, transparent 75%, #666 75%, #666), linear-gradient(45deg, #666 25%, transparent 25%, transparent 75%, #666 75%, #666)';
       input.style.backgroundSize = '8px 8px';

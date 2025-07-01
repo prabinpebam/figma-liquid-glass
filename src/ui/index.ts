@@ -143,9 +143,15 @@ class LiquidGlassUI {
     
     this.createBtn.disabled = msg.isSelected;
     this.createBtn.textContent = 'Create New';
-    this.updateAllBtn.textContent = this.isMultipleSelection ? `Update selection (${this.lgElementCount})` : 'Update selection';
     
-    // Update controls with mixed value detection
+    // Update button text based on selection state (matching original code logic)
+    if (this.isMultipleSelection) {
+      this.updateAllBtn.textContent = 'Update selection';
+    } else {
+      this.updateAllBtn.textContent = 'Update all';
+    }
+    
+    // Update controls - no mixed value detection for multi-selection, just use provided values
     this.updateRefractionControls(msg.params);
     this.updateEffectsControls(msg.effectsParams);
     
@@ -165,14 +171,14 @@ class LiquidGlassUI {
       this.createBtn.textContent = 'Create New';
       this.createBtn.disabled = true;
       if (this.isMultipleSelection) {
-        this.updateAllBtn.textContent = `Update selection (${msg.lgElementCount || 0})`;
+        this.updateAllBtn.textContent = 'Update selection';
       } else {
         this.updateAllBtn.textContent = 'Update all';
       }
     } else {
       this.createBtn.textContent = 'Create New';
       this.createBtn.disabled = false;
-      this.updateAllBtn.textContent = 'Update all';
+      this.updateAllBtn.textContent = this.isMultipleSelection ? 'Update selection' : 'Update all';
     }
   }
 
@@ -218,17 +224,18 @@ class LiquidGlassUI {
   }
 
   private updateRefractionControls(params: any): void {
-    const updateInput = (id: string, value: any, mixedKey: string) => {
+    // No mixed value handling - just set the values directly
+    const updateInput = (id: string, value: any) => {
       const input = document.getElementById(id) as HTMLInputElement;
       if (input) {
-        this.controlManager.updateInputDisplay(input, value || 0, this.hasMixedValues[mixedKey]);
+        input.value = (value || 0).toString();
       }
     };
 
-    updateInput('edge', params.edge, 'edge');
-    updateInput('strength', params.strength, 'strength');
-    updateInput('ca', params.ca, 'ca');
-    updateInput('frost', params.frost, 'frost');
+    updateInput('edge', params.edge);
+    updateInput('strength', params.strength);
+    updateInput('ca', params.ca);
+    updateInput('frost', params.frost);
   }
 
   private updateEffectsControls(effectsParams: any): void {
@@ -236,50 +243,50 @@ class LiquidGlassUI {
 
     const ep = effectsParams;
     
-    // Update numeric inputs
+    // Update numeric inputs - no mixed value handling
     const updates = [
-      ['inner-shadow-x', ep.innerShadowX, 'innerShadowX'],
-      ['inner-shadow-y', ep.innerShadowY, 'innerShadowY'],
-      ['inner-shadow-blur', ep.innerShadowBlur, 'innerShadowBlur'],
-      ['inner-shadow-spread', ep.innerShadowSpread, 'innerShadowSpread'],
-      ['inner-shadow-opacity', ep.innerShadowOpacity, 'innerShadowOpacity'],
-      ['stroke-angle', ep.strokeAngle, 'strokeAngle'],
-      ['stroke-thickness', ep.strokeThickness, 'strokeThickness'],
-      ['stroke-opacity', ep.strokeOpacity, 'strokeOpacity'],
-      ['highlight-stroke-weight', ep.highlightStrokeWeight, 'highlightStrokeWeight'],
-      ['highlight-blur', ep.highlightBlur, 'highlightBlur'],
-      ['reflection-opacity', ep.reflectionOpacity, 'reflectionOpacity'],
-      ['tint-opacity', ep.tintOpacity, 'tintOpacity']
+      ['inner-shadow-x', ep.innerShadowX],
+      ['inner-shadow-y', ep.innerShadowY],
+      ['inner-shadow-blur', ep.innerShadowBlur],
+      ['inner-shadow-spread', ep.innerShadowSpread],
+      ['inner-shadow-opacity', ep.innerShadowOpacity],
+      ['stroke-angle', ep.strokeAngle],
+      ['stroke-thickness', ep.strokeThickness],
+      ['stroke-opacity', ep.strokeOpacity],
+      ['highlight-stroke-weight', ep.highlightStrokeWeight],
+      ['highlight-blur', ep.highlightBlur],
+      ['reflection-opacity', ep.reflectionOpacity],
+      ['tint-opacity', ep.tintOpacity]
     ];
 
-    updates.forEach(([id, value, mixedKey]) => {
+    updates.forEach(([id, value]) => {
       const input = document.getElementById(id) as HTMLInputElement;
       if (input) {
-        this.controlManager.updateInputDisplay(input, value || 0, this.hasMixedValues[mixedKey]);
+        input.value = (value || 0).toString();
       }
     });
 
     // Update color inputs
     const colorUpdates = [
-      ['stroke-color', ep.strokeColor, 'strokeColor'],
-      ['reflection-color', ep.reflectionColor, 'reflectionColor'],
-      ['tint-color', ep.tintColor, 'tintColor']
+      ['stroke-color', ep.strokeColor],
+      ['reflection-color', ep.reflectionColor],
+      ['tint-color', ep.tintColor]
     ];
 
-    colorUpdates.forEach(([id, value, mixedKey]) => {
+    colorUpdates.forEach(([id, value]) => {
       const input = document.getElementById(id) as HTMLInputElement;
       if (input) {
-        this.controlManager.updateColorInputDisplay(input, value || '#ffffff', this.hasMixedValues[mixedKey]);
+        input.value = value || '#ffffff';
       }
     });
 
-    // Update blend mode dropdown - handle legacy blend mode values
+    // Update blend mode dropdown
     let blendModeValue = ep.tintBlendMode || 'NORMAL';
     // Convert legacy values to match UI options
     if (blendModeValue === 'LINEAR_BURN') blendModeValue = 'PLUS_DARKER';
     if (blendModeValue === 'LINEAR_DODGE') blendModeValue = 'PLUS_LIGHTER';
     
-    this.blendModeDropdown.setBlendMode(blendModeValue, this.hasMixedValues.tintBlendMode);
+    this.blendModeDropdown.setBlendMode(blendModeValue, false); // No mixed value indicator
   }
 
   private getAllParams(): any {
@@ -321,30 +328,19 @@ class LiquidGlassUI {
   }
 
   private handleControlChange(parameterName?: string): void {
-    // Skip if input shows mixed values (unless user is actively changing it)
-    if (parameterName) {
-      const elementId = this.getElementIdForParam(parameterName);
-      const element = document.getElementById(elementId) as HTMLInputElement;
-      if (element && element.value === '--' && !element.classList.contains('being-edited')) {
-        return;
-      }
-    }
-
-    // Determine if we're updating refraction or effects parameters
-    const isRefractionParam = ['edge', 'strength', 'ca', 'frost'].includes(parameterName || '');
-    const isEffectsParam = parameterName && !isRefractionParam;
-    
-    // For single LG element selection - update with optimization
+    // For single LG element selection - update in real-time
     if (this.createBtn.disabled && !this.isMultipleSelection) {
       const params = this.getAllParams();
       
       // Update renderer if we have shape data and this is a refraction param
+      const isRefractionParam = ['edge', 'strength', 'ca', 'frost'].includes(parameterName || '');
       if (this.currentShape && isRefractionParam) {
         this.renderer.updateUniforms(params);
         this.renderer.render();
       }
       
-      // Skip image capture for effects-only updates
+      // Determine update type
+      const isEffectsParam = parameterName && !isRefractionParam;
       if (isEffectsParam) {
         pluginBridge.send('update-lg-element-effects-only', { params, parameterName });
       } else {
@@ -353,20 +349,18 @@ class LiquidGlassUI {
       return;
     }
     
-    // For multiple selection - update all selected LG elements
+    // For multiple selection - send real-time updates for effects only
     if (this.isMultipleSelection && parameterName) {
-      const params = this.getAllParams();
+      const isEffectsParam = !['edge', 'strength', 'ca', 'frost'].includes(parameterName);
       
       if (isEffectsParam) {
-        // Send real-time update for effects parameters only
+        const params = this.getAllParams();
         pluginBridge.send('update-effects-realtime', { 
           parameterName, 
           parameterValue: params[parameterName]
         });
-      } else if (isRefractionParam) {
-        // For refraction parameters, send full update
-        pluginBridge.send('update-selection-lg-elements', { params });
       }
+      // For refraction params in multi-selection, no real-time updates - user must click "Update selection"
     }
   }
 

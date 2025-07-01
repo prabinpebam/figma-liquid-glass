@@ -27,36 +27,37 @@ export async function onSelectionChange() {
       });
       await captureAndSend(editState.node, { ...refractionParams, ...effectsParams });
     }
-    figma.ui.postMessage({ type: 'selection-changed', isLgElement: true, canApplyEffect: false, isMultipleSelection: false });
+    figma.ui.postMessage({ type: 'selection-changed', isLgElement: true, canApplyEffect: false });
     
   } else if (sel.length > 1) {
-    // Multiple selection - find all LG elements in the selection
-    const lgElements = findLgElementsInSelection(sel);
+    // Multiple selection - check if any are LG elements
+    const lgElements = sel.filter(node => node.type === 'FRAME' && parseLayerName(node.name)) as FrameNode[];
     
     if (lgElements.length > 0) {
-      // Multiple LG elements found
+      // Multiple LG elements selected - show default values as in original code
       editState.node = null;
       editState.lastBounds = null;
       
-      // Analyze all LG elements to detect mixed values
-      const analysis = analyzeMultipleLgElements(lgElements);
+      // Use default values for multiple selection (from original code)
+      const defaultParams = { edge: 20, strength: 25, ca: 5, frost: 0 };
+      const defaultEffects = {
+        innerShadowX: 10, innerShadowY: 10, innerShadowBlur: 10, innerShadowSpread: 0, innerShadowOpacity: 40,
+        strokeAngle: 0, strokeColor: '#ffffff', strokeThickness: 1, strokeOpacity: 100,
+        highlightStrokeWeight: 12, highlightBlur: 14,
+        reflectionColor: '#ffffff', reflectionOpacity: 100,
+        tintColor: '#ffffff', tintOpacity: 20, tintBlendMode: 'NORMAL'
+      };
       
       figma.ui.postMessage({ 
         type: 'update-ui-controls', 
-        params: analysis.refractionParams,
-        effectsParams: analysis.effectsParams,
+        params: defaultParams,
+        effectsParams: defaultEffects,
         isSelected: true,
         isMultipleSelection: true,
-        hasMixedValues: analysis.hasMixedValues,
+        hasMixedValues: {}, // No mixed values - just use defaults
         lgElementCount: lgElements.length
       });
-      figma.ui.postMessage({ 
-        type: 'selection-changed', 
-        isLgElement: true, 
-        canApplyEffect: false, 
-        isMultipleSelection: true,
-        lgElementCount: lgElements.length
-      });
+      figma.ui.postMessage({ type: 'selection-changed', isLgElement: true, canApplyEffect: false, isMultipleSelection: true, lgElementCount: lgElements.length });
     } else {
       // Multiple non-LG elements
       editState.node = null;
@@ -68,7 +69,7 @@ export async function onSelectionChange() {
     // Selected a single non-LG element - can apply effect
     editState.node = null;
     editState.lastBounds = null;
-    figma.ui.postMessage({ type: 'selection-changed', isLgElement: false, canApplyEffect: true, isMultipleSelection: false });
+    figma.ui.postMessage({ type: 'selection-changed', isLgElement: false, canApplyEffect: true });
   } else {
     // No selection
     editState.node = null;
@@ -77,7 +78,7 @@ export async function onSelectionChange() {
   }
 }
 
-export function onDocumentChange() {
+export async function onDocumentChange() {
   if (!editState.node) return;
   
   const now = nodeBounds(editState.node);
@@ -183,7 +184,7 @@ export function onDocumentChange() {
   const effectsParams = extractEffectsFromLgElement(editState.node);
   if (refractionParams) {
     // Use 'update' context to trigger capture and send
-    updateLgElement(node, { ...refractionParams, ...effectsParams }, 'update');
+    await updateLgElement(node, { ...refractionParams, ...effectsParams }, 'update');
   }
   
   // Update last bounds
