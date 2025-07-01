@@ -333,7 +333,7 @@ class LiquidGlassUI {
     if (this.createBtn.disabled && !this.isMultipleSelection) {
       const params = this.getAllParams();
       
-      // Update renderer if we have shape data
+      // Update renderer if we have shape data and this is a refraction param
       if (this.currentShape && isRefractionParam) {
         this.renderer.updateUniforms(params);
         this.renderer.render();
