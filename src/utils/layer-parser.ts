@@ -19,8 +19,9 @@ export function formatRefractionLayerName(effects: Partial<EffectsParams>): stri
   const color = (effects.strokeColor ?? '#ffffff').replace('#', '');
   const thickness = effects.strokeThickness ?? 1;
   const strokeOpacity = effects.strokeOpacity ?? 100;
+  const frost = effects.frost ?? 0; // Add frost parameter
   
-  return `[Refraction: IS${x},${y},${blur},${spread},${opacity} ST${angle},${color},${thickness},${strokeOpacity}]`;
+  return `[Refraction: IS${x},${y},${blur},${spread},${opacity} ST${angle},${color},${thickness},${strokeOpacity} FR${frost}]`;
 }
 
 export function formatReflectionLayerName(effects: Partial<EffectsParams>): string {
@@ -84,6 +85,12 @@ export function parseRefractionLayerName(name: string): Partial<EffectsParams> |
       effects.strokeColor = `#${stMatch[2]}`;
       effects.strokeThickness = parseFloat(stMatch[3]);
       effects.strokeOpacity = parseFloat(stMatch[4]);
+    }
+    
+    // Parse frost: FR{frost}
+    const frMatch = paramStr.match(/FR([0-9.]+)/);
+    if (frMatch) {
+      effects.frost = parseFloat(frMatch[1]);
     }
     
     return effects;

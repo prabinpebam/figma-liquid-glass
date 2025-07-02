@@ -68,7 +68,7 @@ async function createComplexShapeLg(selectedNode: SceneNode, params: AllParams) 
     flattened.y = 0;
     flattened.locked = true; // Lock refraction layer
     
-    // Apply stroke effects to the refraction layer
+    // Apply stroke effects to the refraction layer (no blur - handled in shader)
     applyRefractionEffects(flattened, params);
     
     mainFrame.appendChild(flattened);
@@ -196,7 +196,7 @@ async function createSimpleShapeLg(selectedNode: SceneNode, params: AllParams) {
     refractionLayer.cornerRadius = cornerRadius;
   }
 
-  // Apply refraction layer effects
+  // Apply refraction layer effects (no blur - handled in WebGL shader)
   applyRefractionEffects(refractionLayer, params);
   
   mainFrame.appendChild(refractionLayer);

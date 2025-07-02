@@ -27,6 +27,10 @@ export const BLEND_MODE_MAP: { [key: string]: BlendMode } = {
 export function applyRefractionEffects(layer: SceneNode, effects: Partial<EffectsParams>): void {
   if (!('effects' in layer) || !('strokeWeight' in layer) || !('strokes' in layer)) return;
   
+  const layerEffects: Effect[] = [];
+  
+   
+  // Add inner shadow effect
   const innerShadowEffect: Effect = {
     type: 'INNER_SHADOW',
     color: { r: 0, g: 0, b: 0, a: (effects.innerShadowOpacity ?? 40) / 100 },
@@ -36,8 +40,9 @@ export function applyRefractionEffects(layer: SceneNode, effects: Partial<Effect
     visible: true,
     blendMode: 'NORMAL'
   };
+  layerEffects.push(innerShadowEffect);
   
-  layer.effects = [innerShadowEffect];
+  layer.effects = layerEffects;
   
   // Apply stroke thickness
   layer.strokeWeight = effects.strokeThickness ?? 1;

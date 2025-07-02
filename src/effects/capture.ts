@@ -326,6 +326,7 @@ async function captureSimpleShape(target: FrameNode, params: any, nodeId: string
     const shapeType = refractionLayer ? getShapeType(refractionLayer) : 'rectangle';
     const shapeProps = { width, height, cornerRadius: typeof target.cornerRadius === 'number' ? target.cornerRadius : 0 };
     
+    // Note: frost blur is handled entirely in WebGL shader, not as Figma layer effect
     figma.ui.postMessage({ 
       type: 'image-captured', 
       data: `data:image/png;base64,${figma.base64Encode(bytes)}`, 

@@ -167,6 +167,7 @@ figma.ui.onmessage = async (msg) => {
           const refractionParams = parseLayerName(node.name);
           const effectsParams = extractEffectsFromLgElement(node);
           if (refractionParams) {
+            // Include frost parameter for WebGL shader even though no Figma blur effect is applied
             await captureAndSend(node, { ...refractionParams, ...effectsParams }, node.id);
             await new Promise(resolve => setTimeout(resolve, 100));
           }

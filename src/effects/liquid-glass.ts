@@ -124,8 +124,9 @@ export async function updateLgElement(node: FrameNode, params: AllParams, contex
   const cornerRadius = typeof node.cornerRadius === 'number' ? node.cornerRadius : 0;
 
   // Update refraction layer name and effects
-  refractionLayer.name = formatRefractionLayerName(params);
-  applyRefractionEffects(refractionLayer, params);
+  // Frost parameter is included in layer name for UI state but blur is handled in WebGL shader only
+  refractionLayer.name = formatRefractionLayerName({ ...params, frost: params.frost });
+  applyRefractionEffects(refractionLayer, { ...params, frost: params.frost });
 
   // Update tint layer
   const tintGroup = node.findOne(n => n.name === 'tint group') as FrameNode | null;
