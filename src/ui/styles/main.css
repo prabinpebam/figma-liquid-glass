@@ -188,6 +188,34 @@ body {
   user-select: none;
 }
 
+.draggable-input.pointer-locked {
+  background: var(--bg-secondary-color);
+  border-color: var(--primary-color);
+  box-shadow: 0 0 8px var(--primary-color);
+}
+
+/* Pointer Lock Hint */
+#pointer-lock-hint {
+  position: fixed;
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--primary-color);
+  color: white;
+  padding: 4px 12px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 500;
+  z-index: 1000;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+
+#pointer-lock-hint.visible {
+  opacity: 1;
+}
+
 /* Control layouts */
 .control-grid {
   display: grid;
@@ -229,6 +257,7 @@ body {
 .control-full-width .control-label {
   font-size: 12px;
   color: var(--text-secondary-color);
+  width: 94px;
 }
 
 .control-full-width select {
@@ -451,4 +480,26 @@ select.mixed-value {
 .dropdown-selected.mixed-value {
   font-style: italic;
   color: var(--text-secondary-color);
+}
+
+/* Pointer Lock Hint */
+#pointer-lock-hint {
+  position: fixed;
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--primary-color);
+  color: white;
+  padding: 4px 12px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 500;
+  z-index: 1000;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+
+#pointer-lock-hint.visible {
+  opacity: 1;
 }

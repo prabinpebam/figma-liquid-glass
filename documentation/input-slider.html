@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Number Input Slider</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .test-case {
+            margin-bottom: 20px;
+        }
+
+        .test-case label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .number-input-slider {
+            display: inline-block;
+            min-width: 80px;
+            padding: 8px 12px;
+            border: 2px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+            font-family: monospace;
+            background: white;
+            outline: none;
+            transition: all 0.2s ease;
+            user-select: none;
+            cursor: ew-resize;
+        }
+
+        .number-input-slider:hover {
+            border-color: #4CAF50;
+            box-shadow: 0 0 5px rgba(76, 175, 80, 0.3);
+        }
+
+        .number-input-slider:focus {
+            border-color: #2196F3;
+            box-shadow: 0 0 8px rgba(33, 150, 243, 0.4);
+        }
+
+        .number-input-slider.dragging {
+            cursor: ew-resize !important;
+            background: #f8f8f8;
+            border-color: #4CAF50;
+        }
+
+        .number-input-slider.editing {
+            cursor: text !important;
+            user-select: text;
+        }
+
+        .drag-cursor { cursor: ew-resize !important; }
+        .normal-cursor { cursor: default !important; }
+
+        .info {
+            font-size: 12px;
+            color: #666;
+            margin-top: 5px;
+        }
+
+        .number-input-slider.pointer-locked {
+            background: #e8f5e8;
+            border-color: #4CAF50;
+            box-shadow: 0 0 12px rgba(76, 175, 80, 0.5);
+        }
+
+        .pointer-lock-hint {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(76, 175, 80, 0.9);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 4px;
+            font-size: 14px;
+            z-index: 1000;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .pointer-lock-hint.visible {
+            opacity: 1;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Number Input Slider</h1>
+        <p>Hover to see resize cursor, click and drag to adjust values, or click to edit directly.</p>
+        
+        <div class="test-case">
+            <label>Basic slider (0-100, step 1):</label>
+            <div class="number-input-slider" data-min="0" data-max="100" data-step="1" data-value="50">50</div>
+            <div class="info">Range: 0-100, Step: 1</div>
+        </div>
+
+        <div class="test-case">
+            <label>Decimal precision (no limits, step 0.1):</label>
+            <div class="number-input-slider" data-step="0.1" data-value="3.14">3.14</div>
+            <div class="info">No range limits, Step: 0.1</div>
+        </div>
+
+        <div class="test-case">
+            <label>Large steps (-999 to 999, step 10):</label>
+            <div class="number-input-slider" data-min="-999" data-max="999" data-step="10" data-value="0">0</div>
+            <div class="info">Range: -999 to 999, Step: 10</div>
+        </div>
+
+        <div class="test-case">
+            <label>Fine control (0-1, step 0.01):</label>
+            <div class="number-input-slider" data-min="0" data-max="1" data-step="0.01" data-value="0.5">0.50</div>
+            <div class="info">Range: 0-1, Step: 0.01</div>
+        </div>
+
+        <div class="test-case">
+            <label>Negative range (-100 to 0, step 5):</label>
+            <div class="number-input-slider" data-min="-100" data-max="0" data-step="5" data-value="-50">-50</div>
+            <div class="info">Range: -100 to 0, Step: 5</div>
+        </div>
+    </div>
+
+    <div class="pointer-lock-hint" id="pointerLockHint">
+        Mouse locked - Move freely to adjust value. Press ESC to exit.
+    </div>
+
+    <script>
+        class NumberInputSlider {
+            constructor(element) {
+                this.element = element;
+                this.isDragging = false;
+                this.isEditing = false;
+                this.isPointerLocked = false;
+                this.startValue = 0;
+                this.accumulatedMovement = 0;
+                
+                // Parse configuration
+                this.min = this.element.hasAttribute('data-min') ? parseFloat(this.element.getAttribute('data-min')) : -Infinity;
+                this.max = this.element.hasAttribute('data-max') ? parseFloat(this.element.getAttribute('data-max')) : Infinity;
+                this.step = parseFloat(this.element.getAttribute('data-step')) || 1;
+                this.value = parseFloat(this.element.getAttribute('data-value')) || 0;
+                
+                // Calculate drag sensitivity - minimum 3 pixels per step for fine control
+                this.pixelsPerStep = Math.max(3, Math.min(10, this.step * 10));
+                
+                // Set initial value
+                this.updateDisplay();
+                
+                this.setupEventListeners();
+            }
+
+            setupEventListeners() {
+                // Mouse events for dragging
+                this.element.addEventListener('mousedown', this.handleMouseDown.bind(this));
+                document.addEventListener('mousemove', this.handleMouseMove.bind(this));
+                document.addEventListener('mouseup', this.handleMouseUp.bind(this));
+                
+                // Pointer lock events
+                document.addEventListener('pointerlockchange', this.handlePointerLockChange.bind(this));
+                document.addEventListener('pointerlockerror', this.handlePointerLockError.bind(this));
+                
+                // Enhanced mouse move for pointer lock
+                document.addEventListener('mousemove', this.handlePointerLockMove.bind(this));
+                
+                // Double-click to edit
+                this.element.addEventListener('dblclick', this.startEditing.bind(this));
+                
+                // Keyboard events for editing
+                this.element.addEventListener('keydown', this.handleKeyDown.bind(this));
+                this.element.addEventListener('blur', this.stopEditing.bind(this));
+                
+                // Prevent text selection on single click while allowing double-click edit
+                this.element.addEventListener('selectstart', (e) => {
+                    if (!this.isEditing) e.preventDefault();
+                });
+                
+                // Enhanced keyboard events
+                document.addEventListener('keydown', this.handleGlobalKeyDown.bind(this));
+            }
+
+            handleMouseDown(e) {
+                if (this.isEditing) return;
+                
+                e.preventDefault();
+                this.isDragging = true;
+                this.startValue = this.value;
+                this.accumulatedMovement = 0;
+                
+                this.element.classList.add('dragging');
+                
+                // Request pointer lock for seamless dragging
+                this.element.requestPointerLock();
+            }
+
+            handleMouseMove(e) {
+                // This handles regular mouse movement (fallback)
+                if (!this.isDragging || this.isPointerLocked) return;
+                
+                // Fallback behavior for browsers that don't support pointer lock
+                const deltaX = e.movementX || 0;
+                this.updateValueFromMovement(deltaX);
+            }
+
+            handlePointerLockMove(e) {
+                // This handles movement when pointer is locked
+                if (!this.isDragging || !this.isPointerLocked) return;
+                
+                const deltaX = e.movementX || 0;
+                this.updateValueFromMovement(deltaX);
+            }
+
+            updateValueFromMovement(deltaX) {
+                this.accumulatedMovement += deltaX;
+                const steps = Math.round(this.accumulatedMovement / this.pixelsPerStep);
+                
+                if (Math.abs(steps) >= 1) {
+                    const newValue = this.startValue + (steps * this.step);
+                    this.setValue(newValue);
+                    this.startValue = this.value; // Update base value
+                    this.accumulatedMovement = 0; // Reset accumulator
+                }
+            }
+
+            handleMouseUp(e) {
+                if (!this.isDragging) return;
+                
+                this.isDragging = false;
+                this.element.classList.remove('dragging');
+                
+                // Exit pointer lock
+                if (this.isPointerLocked) {
+                    document.exitPointerLock();
+                }
+            }
+
+            handlePointerLockChange() {
+                this.isPointerLocked = document.pointerLockElement === this.element;
+                
+                if (this.isPointerLocked) {
+                    this.element.classList.add('pointer-locked');
+                    this.showPointerLockHint();
+                } else {
+                    this.element.classList.remove('pointer-locked');
+                    this.hidePointerLockHint();
+                    
+                    // If we exit pointer lock while dragging, stop dragging
+                    if (this.isDragging) {
+                        this.isDragging = false;
+                        this.element.classList.remove('dragging');
+                    }
+                }
+            }
+
+            handlePointerLockError() {
+                console.warn('Pointer lock failed - falling back to regular mouse tracking');
+                // Continue with regular dragging even if pointer lock fails
+            }
+
+            handleGlobalKeyDown(e) {
+                // Handle escape key to exit pointer lock
+                if (e.key === 'Escape' && this.isPointerLocked) {
+                    document.exitPointerLock();
+                    e.preventDefault();
+                }
+            }
+
+            showPointerLockHint() {
+                const hint = document.getElementById('pointerLockHint');
+                hint.classList.add('visible');
+            }
+
+            hidePointerLockHint() {
+                const hint = document.getElementById('pointerLockHint');
+                hint.classList.remove('visible');
+            }
+
+            startEditing(e) {
+                e.preventDefault();
+                this.isEditing = true;
+                this.element.classList.add('editing');
+                this.element.contentEditable = true;
+                this.element.focus();
+                
+                // Select all text
+                const range = document.createRange();
+                range.selectNodeContents(this.element);
+                const selection = window.getSelection();
+                selection.removeAllRanges();
+                selection.addRange(range);
+            }
+
+            stopEditing() {
+                if (!this.isEditing) return;
+                
+                this.isEditing = false;
+                this.element.classList.remove('editing');
+                this.element.contentEditable = false;
+                
+                // Parse and validate the entered value
+                const inputValue = this.element.textContent.trim();
+                const parsedValue = parseFloat(inputValue);
+                
+                if (this.validateInput(parsedValue)) {
+                    this.setValue(parsedValue);
+                } else {
+                    // Revert to previous valid value
+                    this.updateDisplay();
+                }
+            }
+
+            handleKeyDown(e) {
+                if (!this.isEditing) return;
+                
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    this.element.blur();
+                } else if (e.key === 'Escape') {
+                    e.preventDefault();
+                    this.updateDisplay(); // Revert changes
+                    this.element.blur();
+                }
+            }
+
+            validateInput(value) {
+                return !isNaN(value) && isFinite(value);
+            }
+
+            setValue(newValue) {
+                // Clamp to min/max bounds
+                if (this.min !== -Infinity) {
+                    newValue = Math.max(this.min, newValue);
+                }
+                if (this.max !== Infinity) {
+                    newValue = Math.min(this.max, newValue);
+                }
+                
+                // Round to step precision
+                const decimalPlaces = this.getDecimalPlaces(this.step);
+                newValue = Math.round(newValue / this.step) * this.step;
+                newValue = parseFloat(newValue.toFixed(decimalPlaces));
+                
+                this.value = newValue;
+                this.updateDisplay();
+            }
+
+            updateDisplay() {
+                const decimalPlaces = this.getDecimalPlaces(this.step);
+                const displayValue = this.value.toFixed(decimalPlaces);
+                this.element.textContent = displayValue;
+                this.element.setAttribute('data-value', this.value);
+            }
+
+            getDecimalPlaces(num) {
+                const str = num.toString();
+                if (str.indexOf('.') !== -1 && str.indexOf('e-') === -1) {
+                    return str.split('.')[1].length;
+                } else if (str.indexOf('e-') !== -1) {
+                    const parts = str.split('e-');
+                    return parseInt(parts[1], 10);
+                }
+                return 0;
+            }
+        }
+
+        // Initialize all sliders when DOM is ready
+        document.addEventListener('DOMContentLoaded', () => {
+            document.querySelectorAll('.number-input-slider').forEach(el => {
+                new NumberInputSlider(el);
+            });
+        });
+
+        // Handle page visibility to stop dragging when tab becomes inactive
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden) {
+                document.querySelectorAll('.number-input-slider.dragging').forEach(el => {
+                    el.classList.remove('dragging');
+                });
+                document.body.classList.remove('drag-cursor');
+            }
+        });
+    </script>
+</body>
+</html>
